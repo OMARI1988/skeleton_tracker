@@ -42,9 +42,9 @@ catkin_package(
 
 
 set(OPENNI2_WRAPPER /opt/ros/indigo/include/openni2_camera/)
-set(OPENNI2_DIR ~/catkin_openni/src/OpenNI2)
-set(NITE2_DIR ~/catkin_openni/src/NiTE-2.0.0/)
-set(NITE2_LIB ~/catkin_openni/src/NiTE-2.0.0/Redist/libNiTE2.so)
+set(OPENNI2_DIR ~/OpenNI2)
+set(NITE2_DIR ~/NiTE-2.0.0/)
+set(NITE2_LIB ~/NiTE-2.0.0/Redist/libNiTE2.so)
 link_directories(${NITE2_DIR}/Redist)
 include_directories(${NITE2_DIR}/Include)
 
