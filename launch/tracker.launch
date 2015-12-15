@@ -19,7 +19,7 @@
 
 	<!-- Transforms /tf to /skeleton_data -->
 	<node pkg="skeleton_tracker" type="skeleton_transform.py" name="skeleton_transform" output="screen">
-        <param name="log_skeleton" value="$(arg log_skeleton)" type="string"/>
+        <param name="log_skeleton" value="$(arg log_skeleton)" type="bool"/>
 	</node>
 
 </launch>

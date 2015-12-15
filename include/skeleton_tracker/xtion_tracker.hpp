@@ -37,6 +37,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <cv_bridge/cv_bridge.h>
+#include "skeleton_tracker/skeleton_tracker_state.h"
 
 #ifndef ALPHA
 #define ALPHA 1/256
@@ -207,6 +208,9 @@ public:
     rgbInfoPub_ = nh_.advertise<sensor_msgs::CameraInfo>("/camera/rgb/camera_info", 1);
 
     rate_ = new ros::Rate(100);
+
+    // Initialize the skeleton state publisher
+    skeleton_state_pub_ = nh_.advertise<skeleton_tracker::skeleton_tracker_state>("skeleton_data/state", 10);
 
   }
   /**
@@ -399,12 +403,20 @@ private:
    */
   void updateUserState(const nite::UserData& user, unsigned long long ts)
   {
-    if (user.isNew())
+  
+    ::skeleton_tracker::skeleton_tracker_state state_msg;
+    state_msg.userID = int(user.getId());
+    state_msg.timepoint = ts;
+    state_msg.message = "";
+          
+    if (user.isNew()){
       USER_MESSAGE("New")
+      state_msg.message = "New";}
     else if (user.isVisible() && !g_visibleUsers_[user.getId()])
       USER_MESSAGE("Visible")
-    else if (!user.isVisible() && g_visibleUsers_[user.getId()])
+    else if (!user.isVisible() && g_visibleUsers_[user.getId()]){
       USER_MESSAGE("Out of Scene")
+      state_msg.message = "Out of Scene";}
     else if (user.isLost())
       USER_MESSAGE("Lost")
 
@@ -432,6 +444,11 @@ private:
           break;
       }
     }
+        // Publish the state of the skeleton detection if it changes.
+    if (state_msg.message != ""){
+        skeleton_state_pub_.publish(state_msg);
+        ros::Rate loop_rate(10);
+    }  
   }
 
   /**
@@ -684,6 +701,8 @@ private:
 
   std::string camera_frame_;
 
+  // State of skeleton tracker publisher
+  ros::Publisher skeleton_state_pub_;
 
 
 }
