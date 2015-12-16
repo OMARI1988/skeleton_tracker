@@ -3,7 +3,8 @@
 	<arg name="tracker_name" default="tracker" />
 	<arg name="camera_frame" default="camera_frame"/>
     <arg name="log_skeleton" default="false"/>
-
+    <arg name="message_store" default="people_skeleton"/>
+    
 	<node pkg="skeleton_tracker" type="xtion_tracker" name="skeleton_tracker" output="screen">
 		<param name="tf_prefix" value="$(arg tracker_name)" />
     	<param name="relative_frame" value="/$(arg tracker_name)_depth_frame" />
@@ -20,6 +21,7 @@
 	<!-- Transforms /tf to /skeleton_data -->
 	<node pkg="skeleton_tracker" type="skeleton_transform.py" name="skeleton_transform" output="screen">
         <param name="log_skeleton" value="$(arg log_skeleton)" type="bool"/>
+        <param name="message_store" value="$(arg message_store)" type="string"/>
 	</node>
 
 </launch>
