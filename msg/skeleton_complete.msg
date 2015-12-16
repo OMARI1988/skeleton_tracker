@@ -1,3 +1,3 @@
 Header header
-int32 userID
+string uuid
 visualization_msgs/Marker[] skeleton_data

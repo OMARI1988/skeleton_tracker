@@ -38,6 +38,10 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <cv_bridge/cv_bridge.h>
 #include "skeleton_tracker/skeleton_tracker_state.h"
+#include <iomanip> 
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_generators.hpp>
+#include <boost/uuid/uuid_io.hpp>
 
 #ifndef ALPHA
 #define ALPHA 1/256
@@ -248,7 +252,22 @@ public:
   }
 
 private:
-  /**
+
+  template<typename T>
+  std::string num_to_str(T num) {
+      std::stringstream ss;
+      ss << std::setprecision(20) << num;
+      return ss.str();
+  }
+
+  std::string generateUUID(std::string time, long id) {
+    boost::uuids::name_generator gen(dns_namespace_uuid);
+    time += num_to_str<long>(id);
+    
+    return num_to_str<boost::uuids::uuid>(gen(time.c_str()));
+  }
+  
+   /**
    * RGB Video broadcaster
    */
   void broadcastVideo()
@@ -403,15 +422,19 @@ private:
    */
   void updateUserState(const nite::UserData& user, unsigned long long ts)
   {
-  
+     
     ::skeleton_tracker::skeleton_tracker_state state_msg;
+    
     state_msg.userID = int(user.getId());
     state_msg.timepoint = ts;
     state_msg.message = "";
-          
+    
     if (user.isNew()){
       USER_MESSAGE("New")
-      state_msg.message = "New";}
+      state_msg.message = "New";
+      now_str = num_to_str<double>(ros::Time::now().toSec());
+     } 
+    
     else if (user.isVisible() && !g_visibleUsers_[user.getId()])
       USER_MESSAGE("Visible")
     else if (!user.isVisible() && g_visibleUsers_[user.getId()]){
@@ -419,7 +442,7 @@ private:
       state_msg.message = "Out of Scene";}
     else if (user.isLost())
       USER_MESSAGE("Lost")
-
+      
     g_visibleUsers_[user.getId()] = user.isVisible();
 
     if (g_skeletonStates_[user.getId()] != user.getSkeleton().getState())
@@ -444,7 +467,10 @@ private:
           break;
       }
     }
-        // Publish the state of the skeleton detection if it changes.
+    std::string uuid = generateUUID(now_str, state_msg.userID); 
+    state_msg.uuid = uuid;
+
+    // Publish the state of the skeleton detection if it changes.
     if (state_msg.message != ""){
         skeleton_state_pub_.publish(state_msg);
         ros::Rate loop_rate(10);
@@ -596,6 +622,7 @@ private:
     msg_->header.frame_id = camera_frame_;
     msg_->header.stamp = ros::Time::now();
     imageSKPub_.publish(msg_);
+
   }
 
   /**
@@ -643,7 +670,8 @@ private:
     info_msg->P[10] = 1.0;
     return (info_msg);
   }
-
+  
+  
   /// ROS NodeHandle
   ros::NodeHandle nh_;
 
@@ -704,7 +732,8 @@ private:
   // State of skeleton tracker publisher
   ros::Publisher skeleton_state_pub_;
 
-
+  boost::uuids::uuid dns_namespace_uuid;
+  std::string now_str = num_to_str<double>(ros::Time::now().toSec());
 }
 ;
 

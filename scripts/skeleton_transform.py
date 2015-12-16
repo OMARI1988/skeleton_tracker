@@ -33,16 +33,17 @@ class SkeletonManager(object):
                 'right_foot',
                 ]
 
-        self.data = {}                
-        self.users = {}
-        self.accumulate_data = {}
+        self.data = {} #c urrent tf frame data for 15 joints 
+        self.accumulate_data = {} # accumulates multiple tf frames
+        self.users = {} # keeps the tracker state message, timepoint and UUID
         
         # logging to mongo:
-        self._with_logging = rospy.get_param("~log_skeleton", "false")        
-        self._message_store = rospy.get_param("~message_store", "people_skeleton")        
+        self._with_logging = rospy.get_param("~log_skeleton", "false")
+        self._message_store = rospy.get_param("~message_store", "people_skeleton")
         
         # listeners:
         self.tf_listener = tf.TransformListener()
+        #self.uuid_listener = rospy.Subscriber("/people", user_ID, self.uuid_callback)       
         self.state_listener = rospy.Subscriber("skeleton_data/state", skeleton_tracker_state, self.tracker_state_callback)
         
         # publishers:
@@ -53,17 +54,18 @@ class SkeletonManager(object):
         # initialise data to recieve tf data
         self._initialise_data()
         
+        # initialise mongodb client
         if self._with_logging:
             rospy.loginfo("Connecting to mongodb...%s" % self._message_store)
-            _store_client = MessageStoreProxy(collection=self._message_store)
-    
+            self._store_client = MessageStoreProxy(collection=self._message_store)
+
             
     def _initialise_data(self):
         #to cope with upto 10 people in the scene
         for subj in xrange(1,9):
             self.data[subj] = {}
             self.data[subj]['flag'] = 0
-            self.users[subj] = ("No Detection", 0)
+            self.users[subj] = {"message": "No message"}
             
             for i in self.joints:
                 self.data[subj][i] = dict()
@@ -89,13 +91,21 @@ class SkeletonManager(object):
                             continue
 
                 #If the tracker_state is 'Out of Scene' publish the accumulated skeleton
-                (state_message, timepoint) = self.users[subj]
-                if state_message == "Out of Scene" and subj in self.accumulate_data:
+                if self.users[subj]["message"] == "Out of Scene" and subj in self.accumulate_data:
                     self._publish_complete_data(subj)
-                   
+                    self.data[subj]['flag'] = 0
+                    
+                #print "h ", self.data[subj]['flag'], self.users[subj]["message"]
+                    
+            
             #For all subjects, publish the incremental skeleton and accumulate into self.data also.
-            for subj in [subj for subj in self.data if self.data[subj]['flag'] == 1]:
-
+            list_of_subs = [subj for subj in self.data if self.data[subj]['flag'] == 1]
+            #print ">>>", list_of_subs
+            for subj in list_of_subs:
+                if self.users[subj]["message"] != "New": 
+                    continue  # this catches cases where they leave the scene but still have /tf data
+                
+                #print ">", subj
                 incr_msg = Marker()
                 incr_msg.id = subj
                 for i in self.joints:
@@ -110,42 +120,48 @@ class SkeletonManager(object):
                 self.publish_skl_incr.publish(incr_msg)
                 
                 #accumulate the messages
-                self._accumulate_data(incr_msg)
-                
+                if self.users[subj]["message"] == "New":
+                    self._accumulate_data(subj, incr_msg)
+                    
+                elif self.users[subj]["message"] == "No message":
+                    print "Just published this user. Get over it"
+                else:
+                    raise RuntimeError("this should never have occured; why is message not `New` or `Out of Scene' ??? ")
+
             self.rate.sleep()
 
-    def _accumulate_data(self, current_msg):
-        (state_message, timepoint) = self.users[current_msg.id]
-        #print "accumulating data for: ", current_msg.id, ". currently stored for: ", self.accumulate_data.keys(), message
-        
-        if state_message == "New":
-            if current_msg.id in self.accumulate_data:
-                self.accumulate_data[current_msg.id].append(current_msg)
-            else:
-                self.accumulate_data[current_msg.id] = [current_msg]
+    def _accumulate_data(self, subj, current_msg):
+        # accumulate the multiple skeleton messages until user goes out of scene
+        if current_msg.id in self.accumulate_data:
+            self.accumulate_data[current_msg.id].append(current_msg)
         else:
-            raise RuntimeError("this should never have occured; why is message not `New` or `Out of Scene")   
+            self.accumulate_data[current_msg.id] = [current_msg]
 
 
     def _publish_complete_data(self, subj):
         # when user goes "out of scene" publish their accumulated data
         
-        msg = skeleton_complete()
-        msg.userID = subj
-        msg.skeleton_data = self.accumulate_data[subj]
+        msg = skeleton_complete(uuid = self.users[subj]["uuid"], \
+                                skeleton_data = self.accumulate_data[subj])
         self.publish_skl_comp.publish(msg)
-        print "publishing complete data for: ", subj, " of len: ", len(self.accumulate_data[subj])
+        rospy.loginfo("User #%s: published as %s" % (subj, msg.uuid))
 
         # remove the user from the users dictionary and the accumulated data dict.
-        self.users[subj] = ("No Detection", 0)
+        self.users[subj]["message"] = "No message"
         del self.accumulate_data[subj]
-
+        del self.users[subj]["uuid"]
+        
         if self._with_logging:
-            print "publish to mongodb here. (with UID)"
-            
+            query = {"uuid" : msg.uuid}
+            meta = {"map" : "don't know"}
+            #self._store_client.insert(traj_msg, meta)
+            self._store_client.update(message=msg, message_query=query, meta=meta, upsert=True)
+
 
     def tracker_state_callback(self, msg):
-        self.users[msg.userID] = (msg.message, msg.timepoint)
+        self.users[msg.userID]["uuid"] = msg.uuid
+        self.users[msg.userID]["message"] = msg.message
+        self.users[msg.userID]["timepoint"] = msg.timepoint
               
 
     def publish_skeleton(self):
