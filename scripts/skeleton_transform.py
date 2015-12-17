@@ -5,15 +5,15 @@ roslib.load_manifest('tf')
 import rospy
 import tf
 import sys
-from visualization_msgs.msg import Marker   
-from geometry_msgs.msg import Point
-from skeleton_tracker.msg import skeleton_tracker_state, skeleton_complete
+from std_msgs.msg import String
+from geometry_msgs.msg import Pose, Point, Quaternion
+from strands_navigation_msgs.msg import TopologicalMap
+from skeleton_tracker.msg import joint_message, skeleton_tracker_state, skeleton_message, skeleton_complete
 from mongodb_store.message_store import MessageStoreProxy
 
 class SkeletonManager(object):
    
     def __init__(self):
-    
         self.baseFrame = '/tracker_depth_frame'
         self.joints = [
                 'head',
@@ -36,6 +36,9 @@ class SkeletonManager(object):
         self.data = {} #c urrent tf frame data for 15 joints 
         self.accumulate_data = {} # accumulates multiple tf frames
         self.users = {} # keeps the tracker state message, timepoint and UUID
+        self.map_info = "don't know"  # topological map name
+        self.current_node = "don't care"  # topological node waypoint
+        self.robot_pose = Pose()   # pose of the robot
         
         # logging to mongo:
         self._with_logging = rospy.get_param("~log_skeleton", "false")
@@ -44,11 +47,14 @@ class SkeletonManager(object):
         # listeners:
         self.tf_listener = tf.TransformListener()
         #self.uuid_listener = rospy.Subscriber("/people", user_ID, self.uuid_callback)       
-        self.state_listener = rospy.Subscriber("skeleton_data/state", skeleton_tracker_state, self.tracker_state_callback)
+        rospy.Subscriber("skeleton_data/state", skeleton_tracker_state, self.tracker_state_callback)
+        rospy.Subscriber("/current_node", String, callback=self.node_callback, queue_size=10)
+        rospy.Subscriber("/robot_pose", Pose, callback=self.robot_callback, queue_size=10)
+        self.topo_listerner = rospy.Subscriber("/topological_map", TopologicalMap, self.map_callback, queue_size = 10)
         
         # publishers:
-        self.publish_skl_incr = rospy.Publisher('skeleton_data/incremental', Marker, queue_size = 10)
-        self.publish_skl_comp = rospy.Publisher('skeleton_data/complete', skeleton_complete, queue_size = 10)
+        self.publish_incr = rospy.Publisher('skeleton_data/incremental', skeleton_message, queue_size = 10)
+        self.publish_comp = rospy.Publisher('skeleton_data/complete', skeleton_complete, queue_size = 10)
         self.rate = rospy.Rate(15.0)
 
         # initialise data to recieve tf data
@@ -69,7 +75,8 @@ class SkeletonManager(object):
             
             for i in self.joints:
                 self.data[subj][i] = dict()
-                self.data[subj][i]['value'] = [0,0,0]
+                #self.data[subj][i]['value'] = [0,0,0]
+                #self.data[subj][i]['value'] = [0,0,0]
                 self.data[subj][i]['t_old'] = 0
 
 
@@ -84,12 +91,14 @@ class SkeletonManager(object):
                             if tp != self.data[subj][i]['t_old']:
                                 self.data[subj][i]['t_old'] = tp
                                 self.data[subj]['flag'] = 1
-                                (self.data[subj][i]['value'], rot) = self.tf_listener.lookupTransform(self.baseFrame, \
-                                                                        "tracker/user_%d/%s" % (subj, i), rospy.Time(0))
+                                (self.data[subj][i]['value'], self.data[subj][i]['rot']) = \
+                                    self.tf_listener.lookupTransform(self.baseFrame, "tracker/user_%d/%s" % (subj, i), rospy.Time(0))
+                                                                        
                         except (tf.Exception, tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
                             joints_found = False
+                            self.data[subj]['flag'] = 0  #don't publish part of this Users skeleton
                             continue
-
+                            
                 #If the tracker_state is 'Out of Scene' publish the accumulated skeleton
                 if self.users[subj]["message"] == "Out of Scene" and subj in self.accumulate_data:
                     self._publish_complete_data(subj)
@@ -103,47 +112,61 @@ class SkeletonManager(object):
             #print ">>>", list_of_subs
             for subj in list_of_subs:
                 if self.users[subj]["message"] != "New": 
-                    continue  # this catches cases where they leave the scene but still have /tf data
+                    continue  # this catches cases where a User leaves the scene but they still have /tf data
                 
                 #print ">", subj
-                incr_msg = Marker()
-                incr_msg.id = subj
+                incr_msg = skeleton_message()
+                incr_msg.userID = subj
                 for i in self.joints:
-                    position = Point()
-                    position.x = self.data[subj][i]['value'][0]
-                    position.y = self.data[subj][i]['value'][1]
-                    position.z = self.data[subj][i]['value'][2]
-                    incr_msg.points.append(position)
+                    joint = joint_message()
+                    joint.name = i
+                    joint.time = self.data[subj][i]['t_old']
+                    
+                    position = Point(x = self.data[subj][i]['value'][0], \
+                               y = self.data[subj][i]['value'][1], z = self.data[subj][i]['value'][2]) 
+                    rot = Quaternion(x = self.data[subj][i]['rot'][0], y = self.data[subj][i]['rot'][1],
+                               z = self.data[subj][i]['rot'][2], w = self.data[subj][i]['rot'][3])
+
+                    joint.pose.position = position
+                    joint.pose.orientation = rot
+                    incr_msg.joints.append(joint)
                 self.data[subj]['flag'] = 0
                 
-                #publish the instant frame message on /incremental
-                self.publish_skl_incr.publish(incr_msg)
+                #publish the instant frame message on /incremental topic
+                self.publish_incr.publish(incr_msg)
                 
                 #accumulate the messages
                 if self.users[subj]["message"] == "New":
                     self._accumulate_data(subj, incr_msg)
-                    
                 elif self.users[subj]["message"] == "No message":
-                    print "Just published this user. Get over it"
+                    print "Just published this user. They are not back yet, get over it."
                 else:
                     raise RuntimeError("this should never have occured; why is message not `New` or `Out of Scene' ??? ")
 
             self.rate.sleep()
 
+
     def _accumulate_data(self, subj, current_msg):
         # accumulate the multiple skeleton messages until user goes out of scene
-        if current_msg.id in self.accumulate_data:
-            self.accumulate_data[current_msg.id].append(current_msg)
+        if current_msg.userID in self.accumulate_data:
+            self.accumulate_data[current_msg.userID].append(current_msg)
         else:
-            self.accumulate_data[current_msg.id] = [current_msg]
+            self.accumulate_data[current_msg.userID] = [current_msg]
 
 
     def _publish_complete_data(self, subj):
         # when user goes "out of scene" publish their accumulated data
+        print "publish:", subj, 
+        st = self.accumulate_data[subj][0].joints[0].time
+        en = self.accumulate_data[subj][-1].joints[-1].time
         
         msg = skeleton_complete(uuid = self.users[subj]["uuid"], \
-                                skeleton_data = self.accumulate_data[subj])
-        self.publish_skl_comp.publish(msg)
+                                skeleton_data = self.accumulate_data[subj], \
+                                number_of_detections = len(self.accumulate_data[subj]), \
+                                map_name = self.map_info, current_topo_node = self.current_node, \
+                                start_time = st, end_time = en, robot_pose = self.robot_pose )
+
+        self.publish_comp.publish(msg)
         rospy.loginfo("User #%s: published as %s" % (subj, msg.uuid))
 
         # remove the user from the users dictionary and the accumulated data dict.
@@ -153,16 +176,28 @@ class SkeletonManager(object):
         
         if self._with_logging:
             query = {"uuid" : msg.uuid}
-            meta = {"map" : "don't know"}
             #self._store_client.insert(traj_msg, meta)
-            self._store_client.update(message=msg, message_query=query, meta=meta, upsert=True)
+            self._store_client.update(message=msg, message_query=query, upsert=True)
 
 
     def tracker_state_callback(self, msg):
+        # get the tracker state message and UUID of tracker user
         self.users[msg.userID]["uuid"] = msg.uuid
         self.users[msg.userID]["message"] = msg.message
         self.users[msg.userID]["timepoint"] = msg.timepoint
-              
+
+    def robot_callback(self, msg):
+        self.robot_pose = msg
+
+    def node_callback(self, msg):
+        self.current_node = msg.data
+
+    def map_callback(self, msg):
+        # get the topological map name
+        self.map_info = msg.map
+        self.topo_listerner.unregister()
+
+
 
     def publish_skeleton(self):
         self._get_tf_data()
