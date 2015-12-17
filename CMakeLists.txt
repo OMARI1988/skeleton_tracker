@@ -16,6 +16,8 @@ find_package(catkin REQUIRED COMPONENTS
   roslib
   tf
   message_generation
+  actionlib
+  actionlib_msgs
 )
 
 #find_package(opencv REQUIRED)
@@ -34,14 +36,19 @@ add_message_files(
    skeleton_tracker_state.msg
 )
 
+add_action_files(
+  DIRECTORY action
+  FILES skeleton.action
+)
+
 generate_messages(
-    DEPENDENCIES geometry_msgs
+    DEPENDENCIES geometry_msgs actionlib_msgs
 )
 
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES skeleton_tracker
-  CATKIN_DEPENDS cv_bridge geometry_msgs image_transport kdl_conversions openni2_camera pcl_conversions pcl_ros roscpp roslib tf
+  CATKIN_DEPENDS cv_bridge geometry_msgs image_transport kdl_conversions openni2_camera pcl_conversions pcl_ros roscpp roslib tf actionlib_msgs
   DEPENDS system_lib opencv message_runtime
 )
 

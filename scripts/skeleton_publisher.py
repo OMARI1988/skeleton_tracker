@@ -204,7 +204,7 @@ class SkeletonManager(object):
 
 
 if __name__ == '__main__':
-    rospy.init_node('skeleton_transform', anonymous=True)
+    rospy.init_node('skeleton_publisher', anonymous=True)
 
     sk_manager = SkeletonManager()
     sk_manager.publish_skeleton()
