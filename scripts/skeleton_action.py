@@ -5,7 +5,7 @@ import rospy
 import actionlib
 
 from skeleton_publisher import SkeletonManager
-from skeleton_tracker.msg import skeletonAction
+from skeleton_tracker.msg import skeletonAction, skeletonActionResult
 
 
 class skeleton_server(object):
@@ -22,9 +22,9 @@ class skeleton_server(object):
 
     def execute_cb(self, goal):
         sk_manager = SkeletonManager()
-        
         if not self.cond(): 
             sk_manager.publish_skeleton()
+
 	    #Split on multiple methods to allow system to stop the action server
         self._as.set_succeeded(skeletonActionResult())
 

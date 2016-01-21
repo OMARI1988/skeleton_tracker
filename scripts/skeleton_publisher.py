@@ -156,7 +156,6 @@ class SkeletonManager(object):
 
     def _publish_complete_data(self, subj):
         # when user goes "out of scene" publish their accumulated data
-        print "publish:", subj, 
         st = self.accumulate_data[subj][0].joints[0].time
         en = self.accumulate_data[subj][-1].joints[-1].time
         
@@ -167,7 +166,7 @@ class SkeletonManager(object):
                                 start_time = st, end_time = en, robot_pose = self.robot_pose )
 
         self.publish_comp.publish(msg)
-        rospy.loginfo("User #%s: published as %s" % (subj, msg.uuid))
+        rospy.loginfo("User #%s: published %s msgs as %s" % (subj, len(self.accumulate_data[subj]), msg.uuid))
 
         # remove the user from the users dictionary and the accumulated data dict.
         self.users[subj]["message"] = "No message"
