@@ -3,7 +3,6 @@ openni2_tracker
 
 `openni2_tracker` is a ROS Wrapper for the OpenNI2 and NiTE2 Skeleton Tracker. 
 
-** Note:  These instructions only been tested with the Primesense Carmine 1.08 tracker.  There is a way to get this working with the Kinect, using the freenect drivers, but I have not tested that yet.  There is information [here](https://github.com/ros-drivers/openni2_camera) on how to use freenect with OpenNI2.
 ### Installation
 1. Clone the beta OpenNI2 repository from Github:
 
@@ -29,13 +28,18 @@ You will probably need to create a free account.
     ```
     Try and run one of the examples in `.../NiTE-Linux-x64-2.2/Samples/Bin/NiTE2`.  If these don't work, then something went wrong with your installation.
 
-3. Clone `openni2_tracker` to your ROS workspace.
+3. Install Openni2_camera
+    ```bash
+    sudo apt-get install ros-indigo-openni2-camera
+    ```
+    
+4. Clone `openni2_tracker` to your ROS workspace.
 
     ```bash
-    git clone git@github.com:futureneer/openni2-tracker.git
+    git clone https://github.com/OMARI1988/skeleton_tracker.git
     ```
 
-4. Configure CMake
+5. Configure CMake
     In the CMakeLists.txt file inside the `openni2_tracker` package, you will need to change the path where CMake will look for OpenNI2 and NiTE2.  These two lines:
     
     ```makefile
@@ -55,16 +59,16 @@ You will probably need to create a free account.
     ```
     need to point to the root directories of where you extracted or cloned OpenNI2 and NiTE2.
 
-    
-5. Make openni2_tracker
+7. Make openni2_tracker
 
     ```bash
     cd your_catkin_workspace/
     catkin_make
     ```
-    
-6. Set up NiTE2: Right now, NiTE requires that any executables point to a training sample directory at `.../NiTE-Linux-x64-2.2/Samples/Bin/NiTE2`.  If you run the NiTE sample code, this works fine because those examples are in that same directory.  However, to be able to roslaunch or rosrun openni2_tracker from any current directory, I have created a workaround script `setup_nite.bash`.  This script creates a symbolic link of the NiTE2 directory in your .ros directory (the default working directory for roslaunch / rosrun).  You will need to modify this file so that it points to YOUR NiTE2 and .ros locations.  I would be pleased if anyone has a better solution to this.
-7. Run openni2_tracker
+
+8. Copy NiTE2 [here](https://drive.google.com/folderview?id=0B3ZtY2aWnhsJUmVUYndfTXNTX2M&usp=sharing) to your ~/.ros/ 
+
+9. Run openni2_tracker
     
     ```bash
     roslaunch skeleton_tracker tracker.launch
@@ -89,7 +93,7 @@ You will probably need to create a free account.
     </launch>
     ```
     
-    Currently, this node will broadcast TF frames of the joints of any user being tracked by the tracker.  The frame names are based on the tracker name, currently `/tracker/user_x/joint_name`. The node will also publish the Point Cloud and the Video stream. 
+    Currently, this node will broadcast TF frames of the joints of any user being tracked by the tracker and an image with the skeletons plotted on it.  The frame names are based on the tracker name, currently `/tracker/user_x/joint_name`. The node will also publish the registered Point Cloud and the Video stream. 
     
 ### THANKS!
 Please let me know if something doesnt work, or if you have suggestions (or feel free to add stuff and send a pull request).
