@@ -37,6 +37,11 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <cv_bridge/cv_bridge.h>
+#include "skeleton_tracker/skeleton_tracker_state.h"
+#include <iomanip>
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_generators.hpp>
+#include <boost/uuid/uuid_io.hpp>
 
 #ifndef ALPHA
 #define ALPHA 1/256
@@ -193,7 +198,7 @@ public:
     imageSKPub_ = it_.advertise("/camera/rgb/sk_tracks", 1);
 
     // Initialize the point cloud publisher
-    pointCloudPub_ = nh_.advertise<pcl::PointCloud<pcl::PointXYZ> >("/camera/point_cloud", 5);
+    pointCloudPub_ = nh_.advertise<pcl::PointCloud<pcl::PointXYZ> >("/camera/depth_registered/points", 5);
 
     // Initialize the depth image publisher
     depthPub_ = it_.advertise("/camera/depth/image", 1);
@@ -207,6 +212,9 @@ public:
     rgbInfoPub_ = nh_.advertise<sensor_msgs::CameraInfo>("/camera/rgb/camera_info", 1);
 
     rate_ = new ros::Rate(100);
+
+    // Initialize the skeleton state publisher
+    skeleton_state_pub_ = nh_.advertise<skeleton_tracker::skeleton_tracker_state>("skeleton_data/state", 10);
 
   }
   /**
@@ -244,7 +252,22 @@ public:
   }
 
 private:
-  /**
+
+  template<typename T>
+  std::string num_to_str(T num) {
+      std::stringstream ss;
+      ss << std::setprecision(20) << num;
+      return ss.str();
+  }
+
+  std::string generateUUID(std::string time, long id) {
+    boost::uuids::name_generator gen(dns_namespace_uuid);
+    time += num_to_str<long>(id);
+
+    return num_to_str<boost::uuids::uuid>(gen(time.c_str()));
+  }
+
+   /**
    * RGB Video broadcaster
    */
   void broadcastVideo()
@@ -256,20 +279,20 @@ private:
       const cv::Mat mImageRGB(vfColorFrame_.getHeight(), vfColorFrame_.getWidth(), CV_8UC3,
                               const_cast<void*>(vfColorFrame_.getData()));
       // Check if grabbed frame is actually full with some content
+      cv::flip(mImageRGB, mImageRGB, 1);
       if (!mImageRGB.empty())
       {
         // Convert the cv image in a ROSy format
-        //cv::flip(mImageRGB, mImageRGB, 1);
         msg_ = cv_bridge::CvImage(std_msgs::Header(), "rgb8", mImageRGB).toImageMsg();
         msg_->header.frame_id = camera_frame_;
         msg_->header.stamp = ros::Time::now();
-        mImage = mImageRGB;
         imagePub_.publish(msg_);
+        // cv::flip(mImageRGB, mImageRGB, 1);
+        mImage = mImageRGB;
 
         msg_ = cv_bridge::CvImage(std_msgs::Header(), "rgb8", mImageRGB).toImageMsg();
         // Publish the rgb camera info
         rgbInfoPub_.publish(this->fillCameraInfo(ros::Time::now(), true));
-
       }
       else
       {
@@ -376,7 +399,7 @@ private:
                               pData);
 
       image.convertTo(image, CV_32FC1, 0.001);
-//      cv::flip(image, image, 1);
+    //  cv::flip(image, image, 1);
       cv_bridge::CvImage out_msg;
       out_msg.header.stamp = ros::Time::now();
       out_msg.encoding = sensor_msgs::image_encodings::TYPE_32FC1;
@@ -399,12 +422,24 @@ private:
    */
   void updateUserState(const nite::UserData& user, unsigned long long ts)
   {
-    if (user.isNew())
+
+    ::skeleton_tracker::skeleton_tracker_state state_msg;
+
+    state_msg.userID = int(user.getId());
+    state_msg.timepoint = ts;
+    state_msg.message = "";
+
+    if (user.isNew()){
       USER_MESSAGE("New")
+      state_msg.message = "New";
+      now_str = num_to_str<double>(ros::Time::now().toSec());
+     }
+
     else if (user.isVisible() && !g_visibleUsers_[user.getId()])
       USER_MESSAGE("Visible")
-    else if (!user.isVisible() && g_visibleUsers_[user.getId()])
+    else if (!user.isVisible() && g_visibleUsers_[user.getId()]){
       USER_MESSAGE("Out of Scene")
+      state_msg.message = "Out of Scene";}
     else if (user.isLost())
       USER_MESSAGE("Lost")
 
@@ -431,6 +466,14 @@ private:
           USER_MESSAGE("Calibration Failed... :-|")
           break;
       }
+    }
+    std::string uuid = generateUUID(now_str, state_msg.userID);
+    state_msg.uuid = uuid;
+
+    // Publish the state of the skeleton detection if it changes.
+    if (state_msg.message != ""){
+        skeleton_state_pub_.publish(state_msg);
+        ros::Rate loop_rate(10);
     }
   }
 
@@ -575,10 +618,13 @@ private:
     }
     // Publish the users' IDs
     userPub_.publish(ids);
+
+    // cv::flip(mImage, mImage, 1);
     msg_ = cv_bridge::CvImage(std_msgs::Header(), "rgb8", mImage).toImageMsg();
     msg_->header.frame_id = camera_frame_;
     msg_->header.stamp = ros::Time::now();
     imageSKPub_.publish(msg_);
+
   }
 
   /**
@@ -626,6 +672,7 @@ private:
     info_msg->P[10] = 1.0;
     return (info_msg);
   }
+
 
   /// ROS NodeHandle
   ros::NodeHandle nh_;
@@ -684,8 +731,11 @@ private:
 
   std::string camera_frame_;
 
+  // State of skeleton tracker publisher
+  ros::Publisher skeleton_state_pub_;
 
-
+  boost::uuids::uuid dns_namespace_uuid;
+  std::string now_str = num_to_str<double>(ros::Time::now().toSec());
 }
 ;
 

@@ -15,6 +15,9 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   roslib
   tf
+  message_generation
+  actionlib
+  actionlib_msgs
 )
 
 #find_package(opencv REQUIRED)
@@ -27,24 +30,33 @@ include_directories(
 add_message_files(
    FILES
    user_IDs.msg
+   joint_message.msg
+   skeleton_message.msg
+   skeleton_complete.msg
+   skeleton_tracker_state.msg
+)
+
+add_action_files(
+  DIRECTORY action
+  FILES skeleton.action
 )
 
 generate_messages(
-    DEPENDENCIES geometry_msgs
+    DEPENDENCIES geometry_msgs actionlib_msgs
 )
 
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES skeleton_tracker
-  CATKIN_DEPENDS cv_bridge geometry_msgs image_transport kdl_conversions openni2_camera pcl_conversions pcl_ros roscpp roslib tf
-  DEPENDS system_lib opencv
+  CATKIN_DEPENDS cv_bridge geometry_msgs image_transport kdl_conversions openni2_camera pcl_conversions pcl_ros roscpp roslib tf actionlib_msgs
+  DEPENDS system_lib opencv message_runtime
 )
 
 
 set(OPENNI2_WRAPPER /opt/ros/indigo/include/openni2_camera/)
-set(OPENNI2_DIR ~/catkin_openni/src/OpenNI2)
-set(NITE2_DIR ~/catkin_openni/src/NiTE-2.0.0/)
-set(NITE2_LIB ~/catkin_openni/src/NiTE-2.0.0/Redist/libNiTE2.so)
+set(OPENNI2_DIR ~/OpenNI2)
+set(NITE2_DIR ~/NiTE-2.0.0/)
+set(NITE2_LIB ~/NiTE-2.0.0/Redist/libNiTE2.so)
 link_directories(${NITE2_DIR}/Redist)
 include_directories(${NITE2_DIR}/Include)
 

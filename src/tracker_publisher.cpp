@@ -239,6 +239,7 @@ int main(int argc, char** argv)
     // image registration
     if (devDevice.isImageRegistrationModeSupported(openni::IMAGE_REGISTRATION_DEPTH_TO_COLOR))
     {
+      std::cout << "/* message */" << std::endl;
       devDevice.setImageRegistrationMode(openni::IMAGE_REGISTRATION_DEPTH_TO_COLOR);
     }
     vsColorStream.setMirroringEnabled(false);
@@ -298,7 +299,7 @@ int main(int argc, char** argv)
       {
         msg = cv_bridge::CvImage(std_msgs::Header(), "rgb8", mImageRGB).toImageMsg();
         image_pub.publish(msg);
-        cv::flip(mImageRGB, mImageRGB, 1);
+        //cv::flip(mImageRGB, mImageRGB, 1);
         msg = cv_bridge::CvImage(std_msgs::Header(), "rgb8", mImageRGB).toImageMsg();
         mImage = mImageRGB;
       }

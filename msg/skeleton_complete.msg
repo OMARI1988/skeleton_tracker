@@ -1,0 +1,9 @@
+Header header
+string uuid
+time start_time
+time end_time
+skeleton_tracker/skeleton_message[] skeleton_data
+geometry_msgs/Pose robot_pose
+int32 number_of_detections
+string map_name
+string current_topo_node
