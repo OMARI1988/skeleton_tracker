@@ -44,18 +44,18 @@ You will probably need to create a free account.
     
     ```makefile
     set(OPENNI2_DIR ~/OpenNI2)
-		set(OPENNI2_WRAPPER /opt/ros/indigo/include/openni2_camera/)
-		set(NITE2_DIR ~/NiTE-2.0.0/)
-		set(NITE2_LIB ~/NiTE-2.0.0/Redist/libNiTE2.so)
+	set(OPENNI2_WRAPPER /opt/ros/indigo/include/openni2_camera/)
+	set(NITE2_DIR ~/NiTE-2.0.0/)
+	set(NITE2_LIB ~/NiTE-2.0.0/Redist/libNiTE2.so)
 
-		link_directories(${OPENNI2_DIR}/Bin/x64-Release)
+	link_directories(${OPENNI2_DIR}/Bin/x64-Release)
 
-		include_directories(${OPENNI2_DIR}/Bin/x64-Release)
-		include_directories(/usr/include/openni2/)
-		include_directories(${OPENNI2_DIR}/Include)
-		include_directories(${OPENNI2_WRAPPER})
-		include_directories(${NITE2_DIR}/Include)
-		include_directories(${OpenCV_INCLUDE_DIRS}/include)
+	include_directories(${OPENNI2_DIR}/Bin/x64-Release)
+	include_directories(/usr/include/openni2/)
+	include_directories(${OPENNI2_DIR}/Include)
+	include_directories(${OPENNI2_WRAPPER})
+	include_directories(${NITE2_DIR}/Include)
+	include_directories(${OpenCV_INCLUDE_DIRS}/include)
     ```
     need to point to the root directories of where you extracted or cloned OpenNI2 and NiTE2.
 
