@@ -1,6 +1,8 @@
 openni2_tracker
 ===============
 
+[![Join the chat at https://gitter.im/OMARI1988/skeleton_tracker](https://badges.gitter.im/OMARI1988/skeleton_tracker.svg)](https://gitter.im/OMARI1988/skeleton_tracker?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 `openni2_tracker` is a ROS Wrapper for the OpenNI2 and NiTE2 Skeleton Tracker. 
 
 ### Installation
