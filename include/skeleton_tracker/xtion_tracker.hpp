@@ -2,7 +2,7 @@
  * \ref xtion_tracker.hpp
  *
  *  \date 11/12/2015
- *  author Muhannad Al-omari
+ *  author Muhannad Alomari
  *  author Yiannis G.
  *  author Alessio Levratti
  *  version 1.0
@@ -43,6 +43,10 @@
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
 
+
+#include <iostream>
+#include <vector>
+
 #ifndef ALPHA
 #define ALPHA 1/256
 #endif
@@ -71,6 +75,9 @@ typedef union
   long long_value;
 } RGBValue;
 
+
+
+// std::cout << R1[0] << std::endl;
 /**
  * Class \ref xtion_tracker. This class can track the skeleton of people and returns joints as a TF stream,
  *  while publishing the video stream and the point cloud captured by an ASUS Xtion Pro Live.
@@ -194,7 +201,7 @@ public:
     depthStream_.start();
 
     // Initialize the image publisher
-    imagePub_ = it_.advertise("/camera/rgb/image", 1);
+    imagePub_ = it_.advertise("/head_xtion/rgb/image_color", 1);
     imageSKPub_ = it_.advertise("/camera/rgb/sk_tracks", 1);
 
     // Initialize the point cloud publisher
@@ -233,14 +240,15 @@ public:
     // Broadcast the RGB video
     this->broadcastVideo();
 
+    // Broadcast the depth image
+    this->getDepth();
+
     // If required, publish point_cloud
     if (pointCloudPub_.getNumSubscribers() > 0)
     {
       this->getPointCloud();
     }
 
-    // Broadcast the depth image
-    this->getDepth();
 
     // Broadcast the depth camera info
     depthInfoPub_.publish(this->fillCameraInfo(ros::Time::now(), false));
@@ -288,7 +296,7 @@ private:
         msg_->header.stamp = ros::Time::now();
         imagePub_.publish(msg_);
         // cv::flip(mImageRGB, mImageRGB, 1);
-        mImage = mImageRGB;
+        mImageRGB.copyTo(mImage);
 
         msg_ = cv_bridge::CvImage(std_msgs::Header(), "rgb8", mImageRGB).toImageMsg();
         // Publish the rgb camera info
@@ -363,7 +371,7 @@ private:
           }
           // Fill in XYZRGB
           pt.x = (u - centerX) * pDepth[depth_idx] * constant;
-          pt.y = -(v - centerY) * pDepth[depth_idx] * constant;
+          pt.y = (v - centerY) * pDepth[depth_idx] * constant;
           pt.z = pDepth[depth_idx] * 0.001;
           RGBValue color;
           color.Red = rgb_buffer[color_idx];
@@ -512,6 +520,43 @@ private:
     float cx = 319.5;
     float cy = 239.5;
 
+
+    std::vector<int> R1 (10);
+    std::vector<int> G1 (10);
+    std::vector<int> B1 (10);
+    R1[0] = 255;
+    R1[1] = 0;
+    R1[2] = 0;
+    R1[3] = 0;
+    R1[4] = 255;
+    R1[5] = 255;
+    R1[6] = 128;
+    R1[7] = 128;
+    R1[8] = 255;
+    R1[9] = 40;
+
+    G1[0] = 0;
+    G1[1] = 255;
+    G1[2] = 0;
+    G1[3] = 255;
+    G1[4] = 0;
+    G1[5] = 128;
+    G1[6] = 128;
+    G1[7] = 0;
+    G1[8] = 128;
+    G1[9] = 200;
+
+    B1[0] = 0;
+    B1[1] = 0;
+    B1[2] = 255;
+    B1[3] = 255;
+    B1[4] = 255;
+    B1[5] = 128;
+    B1[6] = 128;
+    B1[7] = 0;
+    B1[8] = 0;
+    B1[9] = 100;
+
     skeleton_tracker::user_IDs ids;
     niteRc_ = userTracker_.readFrame(&userTrackerFrame_);
     if (niteRc_ != nite::STATUS_OK)
@@ -556,58 +601,59 @@ private:
         {
           int X = 0;
           int Y = 0;
-          int XH = int(named_joints["head"].getPosition().x*fx/named_joints["head"].getPosition().z*-1 +cx);
+          int XH = int(named_joints["head"].getPosition().x*fx/named_joints["head"].getPosition().z +cx);
           int YH = int(named_joints["head"].getPosition().y*fy/named_joints["head"].getPosition().z*-1 +cy);
-          int XN = int(named_joints["neck"].getPosition().x*fx/named_joints["neck"].getPosition().z*-1 +cx);
+          int XN = int(named_joints["neck"].getPosition().x*fx/named_joints["neck"].getPosition().z*1 +cx);
           int YN = int(named_joints["neck"].getPosition().y*fy/named_joints["neck"].getPosition().z*-1 +cy);
-          int XT = int(named_joints["torso"].getPosition().x*fx/named_joints["torso"].getPosition().z*-1 +cx);
+          int XT = int(named_joints["torso"].getPosition().x*fx/named_joints["torso"].getPosition().z*1 +cx);
           int YT = int(named_joints["torso"].getPosition().y*fy/named_joints["torso"].getPosition().z*-1 +cy);
 
-          int XLS = int(named_joints["left_shoulder"].getPosition().x*fx/named_joints["left_shoulder"].getPosition().z*-1 +cx);
+          int XLS = int(named_joints["left_shoulder"].getPosition().x*fx/named_joints["left_shoulder"].getPosition().z*1 +cx);
           int YLS = int(named_joints["left_shoulder"].getPosition().y*fy/named_joints["left_shoulder"].getPosition().z*-1 +cy);
-          int XLE = int(named_joints["left_elbow"].getPosition().x*fx/named_joints["left_elbow"].getPosition().z*-1 +cx);
+          int XLE = int(named_joints["left_elbow"].getPosition().x*fx/named_joints["left_elbow"].getPosition().z*1 +cx);
           int YLE = int(named_joints["left_elbow"].getPosition().y*fy/named_joints["left_elbow"].getPosition().z*-1 +cy);
-          int XLH = int(named_joints["left_hand"].getPosition().x*fx/named_joints["left_hand"].getPosition().z*-1 +cx);
+          int XLH = int(named_joints["left_hand"].getPosition().x*fx/named_joints["left_hand"].getPosition().z*1 +cx);
           int YLH = int(named_joints["left_hand"].getPosition().y*fy/named_joints["left_hand"].getPosition().z*-1 +cy);
 
-          int XRS = int(named_joints["right_shoulder"].getPosition().x*fx/named_joints["right_shoulder"].getPosition().z*-1 +cx);
+          int XRS = int(named_joints["right_shoulder"].getPosition().x*fx/named_joints["right_shoulder"].getPosition().z*1 +cx);
           int YRS = int(named_joints["right_shoulder"].getPosition().y*fy/named_joints["right_shoulder"].getPosition().z*-1 +cy);
-          int XRE = int(named_joints["right_elbow"].getPosition().x*fx/named_joints["right_elbow"].getPosition().z*-1 +cx);
+          int XRE = int(named_joints["right_elbow"].getPosition().x*fx/named_joints["right_elbow"].getPosition().z*1 +cx);
           int YRE = int(named_joints["right_elbow"].getPosition().y*fy/named_joints["right_elbow"].getPosition().z*-1 +cy);
-          int XRH = int(named_joints["right_hand"].getPosition().x*fx/named_joints["right_hand"].getPosition().z*-1 +cx);
+          int XRH = int(named_joints["right_hand"].getPosition().x*fx/named_joints["right_hand"].getPosition().z*1 +cx);
           int YRH = int(named_joints["right_hand"].getPosition().y*fy/named_joints["right_hand"].getPosition().z*-1 +cy);
 
-          int XRHip = int(named_joints["right_hip"].getPosition().x*fx/named_joints["right_hip"].getPosition().z*-1 +cx);
+          int XRHip = int(named_joints["right_hip"].getPosition().x*fx/named_joints["right_hip"].getPosition().z*1 +cx);
           int YRHip = int(named_joints["right_hip"].getPosition().y*fy/named_joints["right_hip"].getPosition().z*-1 +cy);
-          int XRK = int(named_joints["right_knee"].getPosition().x*fx/named_joints["right_knee"].getPosition().z*-1 +cx);
+          int XRK = int(named_joints["right_knee"].getPosition().x*fx/named_joints["right_knee"].getPosition().z*1 +cx);
           int YRK = int(named_joints["right_knee"].getPosition().y*fy/named_joints["right_knee"].getPosition().z*-1 +cy);
-          int XRF = int(named_joints["right_foot"].getPosition().x*fx/named_joints["right_foot"].getPosition().z*-1 +cx);
+          int XRF = int(named_joints["right_foot"].getPosition().x*fx/named_joints["right_foot"].getPosition().z*1 +cx);
           int YRF = int(named_joints["right_foot"].getPosition().y*fy/named_joints["right_foot"].getPosition().z*-1 +cy);
 
-          int XLHip = int(named_joints["left_hip"].getPosition().x*fx/named_joints["left_hip"].getPosition().z*-1 +cx);
+          int XLHip = int(named_joints["left_hip"].getPosition().x*fx/named_joints["left_hip"].getPosition().z*1 +cx);
           int YLHip = int(named_joints["left_hip"].getPosition().y*fy/named_joints["left_hip"].getPosition().z*-1 +cy);
-          int XLK = int(named_joints["left_knee"].getPosition().x*fx/named_joints["left_knee"].getPosition().z*-1 +cx);
+          int XLK = int(named_joints["left_knee"].getPosition().x*fx/named_joints["left_knee"].getPosition().z*1 +cx);
           int YLK = int(named_joints["left_knee"].getPosition().y*fy/named_joints["left_knee"].getPosition().z*-1 +cy);
-          int XLF = int(named_joints["left_foot"].getPosition().x*fx/named_joints["left_foot"].getPosition().z*-1 +cx);
+          int XLF = int(named_joints["left_foot"].getPosition().x*fx/named_joints["left_foot"].getPosition().z*1 +cx);
           int YLF = int(named_joints["left_foot"].getPosition().y*fy/named_joints["left_foot"].getPosition().z*-1 +cy);
 
-          cv::line(mImage, cv::Point(XH,YH),cv::Point(XN,YN),cv::Scalar( 245, 0, 100),2);
-          cv::line(mImage, cv::Point(XN,YN),cv::Point(XT,YT),cv::Scalar( 245, 0, 100),2);
-          cv::line(mImage, cv::Point(XN,YN),cv::Point(XLS,YLS),cv::Scalar( 245, 0, 100),2);
-          cv::line(mImage, cv::Point(XLS,YLS),cv::Point(XLE,YLE),cv::Scalar( 245, 0, 100),2);
-          cv::line(mImage, cv::Point(XLE,YLE),cv::Point(XLH,YLH),cv::Scalar( 245, 0, 100),2);
-          cv::line(mImage, cv::Point(XN,YN),cv::Point(XRS,YRS),cv::Scalar( 245, 0, 100),2);
-          cv::line(mImage, cv::Point(XRS,YRS),cv::Point(XRE,YRE),cv::Scalar( 245, 0, 100),2);
-          cv::line(mImage, cv::Point(XRE,YRE),cv::Point(XRH,YRH),cv::Scalar( 245, 0, 100),2);
-          cv::line(mImage, cv::Point(XT,YT),cv::Point(XRHip,YRHip),cv::Scalar( 245, 0, 100),2);
-          cv::line(mImage, cv::Point(XT,YT),cv::Point(XLHip,YLHip),cv::Scalar( 245, 0, 100),2);
-          cv::line(mImage, cv::Point(XRHip,YRHip),cv::Point(XRK,YRK),cv::Scalar( 245, 0, 100),2);
-          cv::line(mImage, cv::Point(XLHip,YLHip),cv::Point(XLK,YLK),cv::Scalar( 245, 0, 100),2);
-          cv::line(mImage, cv::Point(XRK,YRK),cv::Point(XRF,YRF),cv::Scalar( 245, 0, 100),2);
-          cv::line(mImage, cv::Point(XLK,YLK),cv::Point(XLF,YLF),cv::Scalar( 245, 0, 100),2);
+          cv::line(mImage, cv::Point(XH,YH),cv::Point(XN,YN),cv::Scalar(R1[i],G1[i],B1[i]),2);
+          cv::line(mImage, cv::Point(XN,YN),cv::Point(XT,YT),cv::Scalar(R1[i],G1[i],B1[i]),2);
+          cv::line(mImage, cv::Point(XN,YN),cv::Point(XLS,YLS),cv::Scalar(R1[i],G1[i],B1[i]),2);
+          cv::line(mImage, cv::Point(XLS,YLS),cv::Point(XLE,YLE),cv::Scalar(R1[i],G1[i],B1[i]),2);
+          cv::line(mImage, cv::Point(XLE,YLE),cv::Point(XLH,YLH),cv::Scalar(R1[i],G1[i],B1[i]),2);
+          cv::line(mImage, cv::Point(XN,YN),cv::Point(XRS,YRS),cv::Scalar(R1[i],G1[i],B1[i]),2);
+          cv::line(mImage, cv::Point(XRS,YRS),cv::Point(XRE,YRE),cv::Scalar(R1[i],G1[i],B1[i]),2);
+          cv::line(mImage, cv::Point(XRE,YRE),cv::Point(XRH,YRH),cv::Scalar(R1[i],G1[i],B1[i]),2);
+          cv::line(mImage, cv::Point(XT,YT),cv::Point(XRHip,YRHip),cv::Scalar(R1[i],G1[i],B1[i]),2);
+          cv::line(mImage, cv::Point(XT,YT),cv::Point(XLHip,YLHip),cv::Scalar(R1[i],G1[i],B1[i]),2);
+          cv::line(mImage, cv::Point(XRHip,YRHip),cv::Point(XRK,YRK),cv::Scalar(R1[i],G1[i],B1[i]),2);
+          cv::line(mImage, cv::Point(XLHip,YLHip),cv::Point(XLK,YLK),cv::Scalar(R1[i],G1[i],B1[i]),2);
+          cv::line(mImage, cv::Point(XRK,YRK),cv::Point(XRF,YRF),cv::Scalar(R1[i],G1[i],B1[i]),2);
+          cv::line(mImage, cv::Point(XLK,YLK),cv::Point(XLF,YLF),cv::Scalar(R1[i],G1[i],B1[i]),2);
 
-          cv::circle(mImage, cv::Point(XH,YH), 8.0, cv::Scalar( 200, 0, 55 ), -1, 1 );
+          cv::circle(mImage, cv::Point(XH,YH), 8.0, cv::Scalar(R1[i],G1[i],B1[i]), -1, 1 );
         }
+
         for (JointMap::iterator it = named_joints.begin(); it != named_joints.end(); ++it)
         {
           publishJointTF(it->first, it->second, user.getId());
@@ -618,7 +664,6 @@ private:
     }
     // Publish the users' IDs
     userPub_.publish(ids);
-
     // cv::flip(mImage, mImage, 1);
     msg_ = cv_bridge::CvImage(std_msgs::Header(), "rgb8", mImage).toImageMsg();
     msg_->header.frame_id = camera_frame_;
