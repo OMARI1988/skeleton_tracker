@@ -12,12 +12,16 @@ openni2_tracker
     
 2. Download NiTE-2.0.0 and OpenNI2 from the link below, and place them in your home directoy.
 
-https://drive.google.com/open?id=0B3ZtY2aWnhsJQjdjdHk4RUtfeWc
-
+    ```bash
+    https://drive.google.com/open?id=0B3ZtY2aWnhsJQjdjdHk4RUtfeWc
+    ```
+    
 3. Donwload Nite2 fron the link below, and place it in your ~/.ros/ directory
 
-https://drive.google.com/open?id=0B3ZtY2aWnhsJUmVUYndfTXNTX2M
-
+    ```bash
+    https://drive.google.com/open?id=0B3ZtY2aWnhsJUmVUYndfTXNTX2M
+    ```
+    
 4. Finaly, catkin make your catkin_ws
 
     ```bash
