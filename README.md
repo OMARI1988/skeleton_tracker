@@ -21,15 +21,21 @@ openni2_tracker
     ```bash
     https://drive.google.com/open?id=0B3ZtY2aWnhsJUmVUYndfTXNTX2M
     ```
+
+4. Get either the desktop version, or the robot version of the STRANDS system
+
+    ```bash
+    https://github.com/strands-project-releases/strands-releases/wiki
+    ```
     
-4. Finaly, catkin make your catkin_ws
+5. Finaly, catkin make your catkin_ws
 
     ```bash
     cd catkin_ws
     catkin_make
     ```
     
-5. Now you should be able to run the skelton tracker
+6. Now you should be able to run the skelton tracker
 
     ```bash
     roslaunch skeleton_tracker tracker.launch
