@@ -51,7 +51,7 @@
 #define ALPHA 1/256
 #endif
 
-#define MAX_USERS 10
+#define MAX_USERS 9
 
 #define USER_MESSAGE(msg) \
         {printf("[%08llu] User #%d:\t%s\n",ts, user.getId(),msg);}

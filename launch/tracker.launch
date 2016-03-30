@@ -3,6 +3,7 @@
 	<arg name="tracker_name" default="tracker" />
 	<arg name="camera_frame" default="head_xtion_rgb_optical_frame"/>
 	<arg name="pub_skeleton" default="True"/>
+	<arg name="stand_alone" default="False"/>
     <arg name="log_skeleton" default="False"/>
     <arg name="message_store" default="people_skeleton"/>
 
@@ -13,12 +14,7 @@
     	<param name="camera_frame" type="string" value="/$(arg camera_frame)"/>
 	</node>
 
-	<!-- TF Static Transforms to World -->
-    <!-- <node pkg="tf" type="static_transform_publisher" name="top_plate_to_tracker"
-    args=" 0 0 .385 1.5707 0 1.5707  /world /$(arg tracker_name)_depth_frame 100"/>
 
-    <node pkg="tf" type="static_transform_publisher" name="depth_toObjRecog"
-    args=" 0 0 0 3.1415 0 0  /$(arg tracker_name)_depth_frame /$(arg camera_frame) 100"/> -->
 
 
     <group if="$(arg pub_skeleton)">

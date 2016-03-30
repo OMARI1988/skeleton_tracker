@@ -57,6 +57,9 @@ class SkeletonManager(object):
         self.publish_comp = rospy.Publisher('skeleton_data/complete', skeleton_complete, queue_size = 10)
         self.rate = rospy.Rate(15.0)
 
+        self.dist_thresh = 2
+        self.dist_flag = 1
+
         # initialise data to recieve tf data
         self._initialise_data()
 
@@ -113,10 +116,12 @@ class SkeletonManager(object):
             for subj in list_of_subs:
                 if self.users[subj]["message"] != "New":
                     continue  # this catches cases where a User leaves the scene but they still have /tf data
+                self.dist_flag = 1      # initiate the distance threshold flag to 1
 
                 #print ">", subj
                 incr_msg = skeleton_message()
                 incr_msg.userID = subj
+                incr_msg.uuid = self.users[subj]["uuid"]
                 for i in self.joints:
                     joint = joint_message()
                     joint.name = i
@@ -126,22 +131,24 @@ class SkeletonManager(object):
                                y = self.data[subj][i]['value'][1], z = self.data[subj][i]['value'][2])
                     rot = Quaternion(x = self.data[subj][i]['rot'][0], y = self.data[subj][i]['rot'][1],
                                z = self.data[subj][i]['rot'][2], w = self.data[subj][i]['rot'][3])
-
+                    if self.data[subj][i]['value'][2] <= self.dist_thresh:
+                        self.dist_flag = 0
                     joint.pose.position = position
                     joint.pose.orientation = rot
                     incr_msg.joints.append(joint)
                 self.data[subj]['flag'] = 0
 
-                #publish the instant frame message on /incremental topic
-                self.publish_incr.publish(incr_msg)
+                if self.dist_flag:
+                    #publish the instant frame message on /incremental topic
+                    self.publish_incr.publish(incr_msg)
 
-                #accumulate the messages
-                if self.users[subj]["message"] == "New":
-                    self._accumulate_data(subj, incr_msg)
-                elif self.users[subj]["message"] == "No message":
-                    print "Just published this user. They are not back yet, get over it."
-                else:
-                    raise RuntimeError("this should never have occured; why is message not `New` or `Out of Scene' ??? ")
+                    #accumulate the messages
+                    if self.users[subj]["message"] == "New":
+                        self._accumulate_data(subj, incr_msg)
+                    elif self.users[subj]["message"] == "No message":
+                        print "Just published this user. They are not back yet, get over it."
+                    else:
+                        raise RuntimeError("this should never have occured; why is message not `New` or `Out of Scene' ??? ")
 
             self.rate.sleep()
 
@@ -165,11 +172,11 @@ class SkeletonManager(object):
                                 map_name = self.map_info, current_topo_node = self.current_node, \
                                 start_time = st, end_time = en, robot_pose = self.robot_pose )
 
+        self.users[subj]["message"] = "No message"
         self.publish_comp.publish(msg)
         rospy.loginfo("User #%s: published %s msgs as %s" % (subj, len(self.accumulate_data[subj]), msg.uuid))
 
         # remove the user from the users dictionary and the accumulated data dict.
-        self.users[subj]["message"] = "No message"
         del self.accumulate_data[subj]
         del self.users[subj]["uuid"]
 
