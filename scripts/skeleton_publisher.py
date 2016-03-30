@@ -48,13 +48,13 @@ class SkeletonManager(object):
         self.tf_listener = tf.TransformListener()
         #self.uuid_listener = rospy.Subscriber("/people", user_ID, self.uuid_callback)
         rospy.Subscriber("skeleton_data/state", skeleton_tracker_state, self.tracker_state_callback)
-        rospy.Subscriber("/current_node", String, callback=self.node_callback, queue_size=10)
-        rospy.Subscriber("/robot_pose", Pose, callback=self.robot_callback, queue_size=10)
-        self.topo_listerner = rospy.Subscriber("/topological_map", TopologicalMap, self.map_callback, queue_size = 10)
+        rospy.Subscriber("/current_node", String, callback=self.node_callback, queue_size=1)
+        rospy.Subscriber("/robot_pose", Pose, callback=self.robot_callback, queue_size=1)
+        self.topo_listerner = rospy.Subscriber("/topological_map", TopologicalMap, self.map_callback, queue_size = 1)
 
         # publishers:
-        self.publish_incr = rospy.Publisher('skeleton_data/incremental', skeleton_message, queue_size = 10)
-        self.publish_comp = rospy.Publisher('skeleton_data/complete', skeleton_complete, queue_size = 10)
+        self.publish_incr = rospy.Publisher('skeleton_data/incremental', skeleton_message, queue_size = 1)
+        self.publish_comp = rospy.Publisher('skeleton_data/complete', skeleton_complete, queue_size = 1)
         self.rate = rospy.Rate(15.0)
 
         self.dist_thresh = 2
@@ -150,7 +150,7 @@ class SkeletonManager(object):
                     else:
                         raise RuntimeError("this should never have occured; why is message not `New` or `Out of Scene' ??? ")
 
-            self.rate.sleep()
+            # self.rate.sleep()
 
 
     def _accumulate_data(self, subj, current_msg):

@@ -61,9 +61,9 @@ class SkeletonManager(object):
         # listeners
         rospy.Subscriber("/robot_pose", Pose, callback=self.robot_callback, queue_size=10)
         rospy.Subscriber('skeleton_data/incremental', skeleton_message,callback=self.incremental_callback, queue_size = 1)
-        rospy.Subscriber('skeleton_data/complete', skeleton_complete,callback=self.complete_callback, queue_size = 10)
-        rospy.Subscriber("/head_xtion/rgb/image_color", sensor_msgs.msg.Image, callback=self.rgb_callback, queue_size=10)
-        rospy.Subscriber("/camera/rgb/sk_tracks", sensor_msgs.msg.Image, callback=self.rgb_sk_callback, queue_size=10)
+        rospy.Subscriber('skeleton_data/complete', skeleton_complete,callback=self.complete_callback, queue_size = 1)
+        rospy.Subscriber("/head_xtion/rgb/image_color", sensor_msgs.msg.Image, callback=self.rgb_callback, queue_size=1)
+        rospy.Subscriber("/camera/rgb/sk_tracks", sensor_msgs.msg.Image, callback=self.rgb_sk_callback, queue_size=1)
         # rospy.Subscriber("/camera/depth/image", sensor_msgs.msg.Image, callback=self.depth_callback, queue_size=10)
 
 
@@ -75,7 +75,15 @@ class SkeletonManager(object):
 
     def incremental_callback(self, msg):
         self.inc_sk = msg
-        print self.inc_sk.uuid
+        if str(datetime.datetime.now().date()) != self.date:
+            print 'new day!'
+            self.date = str(datetime.datetime.now().date())
+            self.dir1 = '/home/lucie02/Datasets/Lucie/'+self.date+'/'
+            print 'checking if folder exists:',self.dir1
+            if not os.path.exists(self.dir1):
+                print '  -create folder:',self.dir1
+                os.makedirs(self.dir1)
+        # print self.inc_sk.uuid
         if self._flag_robot and self._flag_rgb and self._flag_rgb_sk:
             if self.inc_sk.uuid not in self.sk_mapping:
                 self.sk_mapping[self.inc_sk.uuid] = {}
@@ -170,13 +178,13 @@ if __name__ == '__main__':
 
     sk_manager = SkeletonManager()
     while not rospy.is_shutdown():
-        if str(datetime.datetime.now().date()) != sk_manager.date:
-            print 'new day!'
-            sk_manager.date = str(datetime.datetime.now().date())
-            sk_manager.dir1 = '/home/lucie02/Datasets/Lucie/'+sk_manager.date+'/'
-            print 'checking if folder exists:',sk_manager.dir1
-            if not os.path.exists(sk_manager.dir1):
-                print '  -create folder:',sk_manager.dir1
-                os.makedirs(sk_manager.dir1)
+        # if str(datetime.datetime.now().date()) != sk_manager.date:
+        #     print 'new day!'
+        #     sk_manager.date = str(datetime.datetime.now().date())
+        #     sk_manager.dir1 = '/home/lucie02/Datasets/Lucie/'+sk_manager.date+'/'
+        #     print 'checking if folder exists:',sk_manager.dir1
+        #     if not os.path.exists(sk_manager.dir1):
+        #         print '  -create folder:',sk_manager.dir1
+        #         os.makedirs(sk_manager.dir1)
 
         pass
