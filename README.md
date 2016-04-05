@@ -44,5 +44,7 @@ openni2_tracker
 
 ![marker](https://raw.githubusercontent.com/OMARI1988/skeleton_tracker/master/images/ex_1.jpg)
 
+![marker](https://raw.githubusercontent.com/OMARI1988/skeleton_tracker/master/images/ex_2.jpg)
+
 ### THANKS!
 Please let me know if something doesnt work, or if you have suggestions (or feel free to add stuff and send a pull request).
