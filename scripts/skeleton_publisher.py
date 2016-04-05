@@ -50,13 +50,15 @@ class SkeletonManager(object):
         rospy.Subscriber("skeleton_data/state", skeleton_tracker_state, self.tracker_state_callback)
         rospy.Subscriber("/current_node", String, callback=self.node_callback, queue_size=1)
         rospy.Subscriber("/robot_pose", Pose, callback=self.robot_callback, queue_size=1)
-        self.topo_listerner = rospy.Subscriber("/topological_map", TopologicalMap, self.map_callback, queue_size = 1)
+        self.topo_listerner = rospy.Subscriber("/topological_map", TopologicalMap, self.map_callback, queue_size = 10)
 
         # publishers:
-        self.publish_incr = rospy.Publisher('skeleton_data/incremental', skeleton_message, queue_size = 1)
-        self.publish_comp = rospy.Publisher('skeleton_data/complete', skeleton_complete, queue_size = 1)
+        self.publish_incr = rospy.Publisher('skeleton_data/incremental', skeleton_message, queue_size = 10)
+        self.publish_comp = rospy.Publisher('skeleton_data/complete', skeleton_complete, queue_size = 10)
         self.rate = rospy.Rate(15.0)
 
+        # only publish the skeleton data when the person is far enough away (distance threshold)
+        self.frame_thresh = 6000
         self.dist_thresh = 2
         self.dist_flag = 1
 
@@ -71,7 +73,7 @@ class SkeletonManager(object):
 
     def _initialise_data(self):
         #to cope with upto 10 people in the scene
-        for subj in xrange(1,9):
+        for subj in xrange(1,11):
             self.data[subj] = {}
             self.data[subj]['flag'] = 0
             self.users[subj] = {"message": "No message"}
@@ -85,10 +87,10 @@ class SkeletonManager(object):
 
     def _get_tf_data(self):
         while not rospy.is_shutdown():
-            for subj in xrange(1,9):
+            for subj in xrange(1,11):
                 joints_found = True
                 for i in self.joints:
-                    if self.tf_listener.frameExists(self.baseFrame) and joints_found is True:
+                    if self.tf_listener.frameExists(self.baseFrame) and joints_found:
                         try:
                             tp = self.tf_listener.getLatestCommonTime(self.baseFrame,  "tracker/user_%d/%s" % (subj, i))
                             if tp != self.data[subj][i]['t_old']:
@@ -102,23 +104,28 @@ class SkeletonManager(object):
                             self.data[subj]['flag'] = 0  #don't publish part of this Users skeleton
                             continue
 
+
+                # stop tracking this user after this much frames
+                if "frame" in self.users[subj]:
+                    if self.users[subj]["frame"] >= self.frame_thresh:
+                        self.users[subj]["message"] = "Out of Scene"
+                        self.data[subj]['flag'] = 0
+
                 #If the tracker_state is 'Out of Scene' publish the accumulated skeleton
                 if self.users[subj]["message"] == "Out of Scene" and subj in self.accumulate_data:
                     self._publish_complete_data(subj)
                     self.data[subj]['flag'] = 0
 
-                #print "h ", self.data[subj]['flag'], self.users[subj]["message"]
-
 
             #For all subjects, publish the incremental skeleton and accumulate into self.data also.
             list_of_subs = [subj for subj in self.data if self.data[subj]['flag'] == 1]
-            #print ">>>", list_of_subs
+            # print ">>>", list_of_subs
             for subj in list_of_subs:
                 if self.users[subj]["message"] != "New":
                     continue  # this catches cases where a User leaves the scene but they still have /tf data
                 self.dist_flag = 1      # initiate the distance threshold flag to 1
 
-                #print ">", subj
+                # print ">", subj,self.users[subj]["message"],self.users[subj]["frame"]
                 incr_msg = skeleton_message()
                 incr_msg.userID = subj
                 incr_msg.uuid = self.users[subj]["uuid"]
@@ -141,6 +148,8 @@ class SkeletonManager(object):
                 if self.dist_flag:
                     #publish the instant frame message on /incremental topic
                     self.publish_incr.publish(incr_msg)
+                    #update a frame
+                    self.users[subj]["frame"] += 1
 
                     #accumulate the messages
                     if self.users[subj]["message"] == "New":
@@ -150,7 +159,7 @@ class SkeletonManager(object):
                     else:
                         raise RuntimeError("this should never have occured; why is message not `New` or `Out of Scene' ??? ")
 
-            # self.rate.sleep()
+            self.rate.sleep()
 
 
     def _accumulate_data(self, subj, current_msg):
@@ -188,7 +197,9 @@ class SkeletonManager(object):
 
     def tracker_state_callback(self, msg):
         # get the tracker state message and UUID of tracker user
-        self.users[msg.userID]["uuid"] = msg.uuid
+        if msg.message == 'New':
+            self.users[msg.userID]["uuid"] = msg.uuid
+            self.users[msg.userID]["frame"] = 0
         self.users[msg.userID]["message"] = msg.message
         self.users[msg.userID]["timepoint"] = msg.timepoint
 

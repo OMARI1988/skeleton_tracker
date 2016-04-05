@@ -41,7 +41,8 @@ class SkeletonManager(object):
 
         # directory to store the data
         self.date = str(datetime.datetime.now().date())
-        self.dir1 = '/home/lucie02/Datasets/Lucie/'+self.date+'/'
+        # self.dir1 = '/home/lucie02/Datasets/Lucie/'+self.date+'/'
+        self.dir1 = '/home/lucie02/Dropbox/Lucie/'+self.date+'/'
         print 'checking if folder exists:',self.dir1
         if not os.path.exists(self.dir1):
             print '  -create folder:',self.dir1
@@ -60,10 +61,10 @@ class SkeletonManager(object):
 
         # listeners
         rospy.Subscriber("/robot_pose", Pose, callback=self.robot_callback, queue_size=10)
-        rospy.Subscriber('skeleton_data/incremental', skeleton_message,callback=self.incremental_callback, queue_size = 1)
-        rospy.Subscriber('skeleton_data/complete', skeleton_complete,callback=self.complete_callback, queue_size = 1)
-        rospy.Subscriber("/head_xtion/rgb/image_color", sensor_msgs.msg.Image, callback=self.rgb_callback, queue_size=1)
-        rospy.Subscriber("/camera/rgb/sk_tracks", sensor_msgs.msg.Image, callback=self.rgb_sk_callback, queue_size=1)
+        rospy.Subscriber('skeleton_data/incremental', skeleton_message,callback=self.incremental_callback, queue_size = 10)
+        rospy.Subscriber('skeleton_data/complete', skeleton_complete,callback=self.complete_callback, queue_size = 10)
+        rospy.Subscriber("/head_xtion/rgb/image_color", sensor_msgs.msg.Image, callback=self.rgb_callback, queue_size=10)
+        rospy.Subscriber("/camera/rgb/sk_tracks", sensor_msgs.msg.Image, callback=self.rgb_sk_callback, queue_size=10)
         # rospy.Subscriber("/camera/depth/image", sensor_msgs.msg.Image, callback=self.depth_callback, queue_size=10)
 
 
@@ -78,7 +79,7 @@ class SkeletonManager(object):
         if str(datetime.datetime.now().date()) != self.date:
             print 'new day!'
             self.date = str(datetime.datetime.now().date())
-            self.dir1 = '/home/lucie02/Datasets/Lucie/'+self.date+'/'
+            self.dir1 = '/home/lucie02/Dropbox/Lucie/'+self.date+'/'
             print 'checking if folder exists:',self.dir1
             if not os.path.exists(self.dir1):
                 print '  -create folder:',self.dir1
@@ -112,7 +113,7 @@ class SkeletonManager(object):
 
                 # save rgb image
                 cv2.imwrite(d+'rgb/rgb_'+f_str+'.jpg',self.rgb)
-                cv2.imwrite(d+'rgb_sk/sk_'+f_str+'.jpg',self.rgb_sk)
+                # cv2.imwrite(d+'rgb_sk/sk_'+f_str+'.jpg',self.rgb_sk)
 
                 # save robot_pose
                 f1 = open(d+'robot/robot_'+f_str+'.txt','w')
@@ -130,7 +131,7 @@ class SkeletonManager(object):
                 # save skeleton data
                 f1 = open(d+'skeleton/skl_'+f_str+'.txt','w')
                 # print self.inc_sk.joints[0]
-                f1.write('time:'+str(self.inc_sk.joints[0].time.secs)+','+str(self.inc_sk.joints[0].time.nsecs)+'\n')
+                f1.write('time:'+str(self.inc_sk.joints[0].time.secs)+'.'+str(self.inc_sk.joints[0].time.nsecs)+'\n')
                 for i in self.inc_sk.joints:
                     f1.write(i.name+'\n')
                     f1.write('position\n')

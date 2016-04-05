@@ -436,11 +436,14 @@ private:
     state_msg.userID = int(user.getId());
     state_msg.timepoint = ts;
     state_msg.message = "";
+    state_msg.uuid = "";
 
     if (user.isNew()){
       USER_MESSAGE("New")
       state_msg.message = "New";
       now_str = num_to_str<double>(ros::Time::now().toSec());
+      std::string uuid = generateUUID(now_str, state_msg.userID);
+      state_msg.uuid = uuid;
      }
 
     else if (user.isVisible() && !g_visibleUsers_[user.getId()])
@@ -475,9 +478,6 @@ private:
           break;
       }
     }
-    std::string uuid = generateUUID(now_str, state_msg.userID);
-    state_msg.uuid = uuid;
-
     // Publish the state of the skeleton detection if it changes.
     if (state_msg.message != ""){
         skeleton_state_pub_.publish(state_msg);
