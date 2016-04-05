@@ -41,5 +41,8 @@ openni2_tracker
     roslaunch skeleton_tracker tracker.launch
     ```
 
+
+![marker](https://raw.githubusercontent.com/OMARI1988/skeleton_tracker/master/images/ex_1.jpg)
+
 ### THANKS!
 Please let me know if something doesnt work, or if you have suggestions (or feel free to add stuff and send a pull request).
