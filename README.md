@@ -1,7 +1,7 @@
 openni2_tracker
 ===============
 
-`openni2_tracker` is a ROS Wrapper for the OpenNI2 and NiTE2 Skeleton Tracker. 
+`openni2_tracker` is a ROS Wrapper for the OpenNI2 and NiTE2 Skeleton Tracker.
 
 ### Installation
 1. In your catkin_ws, clone skeleton tracker
@@ -9,13 +9,13 @@ openni2_tracker
     ```bash
     git clone https://github.com/OMARI1988/skeleton_tracker.git
     ```
-    
+
 2. Download NiTE-2.0.0 and OpenNI2 from the link below, and place them in your home directoy.
 
     ```bash
     https://drive.google.com/open?id=0B3ZtY2aWnhsJQjdjdHk4RUtfeWc
     ```
-    
+
 3. Donwload Nite2 fron the link below, and place it in your ~/.ros/ directory
 
     ```bash
@@ -27,18 +27,20 @@ openni2_tracker
     ```bash
     https://github.com/strands-project-releases/strands-releases/wiki
     ```
-    
+
 5. Finaly, catkin make your catkin_ws
 
     ```bash
     cd catkin_ws
     catkin_make
     ```
-    
+
 6. Now you should be able to run the skelton tracker
 
     ```bash
     roslaunch skeleton_tracker tracker.launch
+    
+    roslaunch openni2_launch openni2.launch load_driver:=False depth_registration:=True debayer_processing:=True sw_registered_processing:=True
     ```
 
 
