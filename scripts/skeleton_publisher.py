@@ -58,8 +58,8 @@ class SkeletonManager(object):
         self.rate = rospy.Rate(15.0)
 
         # only publish the skeleton data when the person is far enough away (distance threshold)
-        self.frame_thresh = 6000
-        self.dist_thresh = 2
+        self.frame_thresh = 3500
+        self.dist_thresh = 1.5
         self.dist_flag = 1
 
         # initialise data to recieve tf data

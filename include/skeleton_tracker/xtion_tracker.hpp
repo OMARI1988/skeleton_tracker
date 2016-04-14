@@ -94,21 +94,29 @@ public:
 
     // Get some parameters from the server
     ros::NodeHandle pnh("~");
-    if (!pnh.getParam("tf_prefix", tf_prefix_))
+    // if (!pnh.getParam("tf_prefix", tf_prefix_))
+    // {
+    //   ROS_FATAL("tf_prefix not found on Param Server! Maybe you should add it to your launch file!");
+    //   ros::shutdown();
+    //   return;
+    // }
+    if (!pnh.getParam("camera", camera))
     {
-      ROS_FATAL("tf_prefix not found on Param Server! Maybe you should add it to your launch file!");
+      ROS_FATAL("camera not found on Parameter Server! Maybe you should add it to your launch file!");
       ros::shutdown();
       return;
     }
-    if (!pnh.getParam("relative_frame", relative_frame_))
+
+    if (!pnh.getParam("rgb_frame", rgb_frame))
     {
-      ROS_FATAL("relative_frame not found on Param Server! Maybe you should add it to your launch file!");
+      ROS_FATAL("rgb_frame not found on Parameter Server! Maybe you should add it to your launch file!");
       ros::shutdown();
       return;
     }
-    if (!pnh.getParam("camera_frame", camera_frame_))
+
+    if (!pnh.getParam("depth_frame", depth_frame))
     {
-      ROS_FATAL("camera_frame not found on Parameter Server! Maybe you should add it to your launch file!");
+      ROS_FATAL("depth_frame not found on Parameter Server! Maybe you should add it to your launch file!");
       ros::shutdown();
       return;
     }
@@ -201,22 +209,22 @@ public:
     depthStream_.start();
 
     // Initialize the image publisher
-    imagePub_ = it_.advertise("/head_xtion/rgb/image_color", 1);
-    imageSKPub_ = it_.advertise("/camera/rgb/sk_tracks", 1);
+    imagePub_ = it_.advertise("/"+camera+"/rgb/image_raw", 1);
+    imageSKPub_ = it_.advertise("/"+camera+"/rgb/sk_tracks", 1);
 
     // Initialize the point cloud publisher
-    pointCloudPub_ = nh_.advertise<pcl::PointCloud<pcl::PointXYZ> >("/camera/depth_registered/points", 5);
+    pointCloudPub_ = nh_.advertise<pcl::PointCloud<pcl::PointXYZ> >("/"+camera+"/depth_registered/points", 5);
 
     // Initialize the depth image publisher
-    depthPub_ = it_.advertise("/camera/depth/image", 1);
+    depthPub_ = it_.advertise("/"+camera+"/depth/image_raw", 1);
 
     // Initialize the users IDs publisher
     userPub_ = nh_.advertise<skeleton_tracker::user_IDs>("/people", 1);
 
     // Initialize both the Camera Info publishers
-    depthInfoPub_ = nh_.advertise<sensor_msgs::CameraInfo>("/camera/depth/camera_info", 1);
+    depthInfoPub_ = nh_.advertise<sensor_msgs::CameraInfo>("/"+camera+"/depth/camera_info", 1);
 
-    rgbInfoPub_ = nh_.advertise<sensor_msgs::CameraInfo>("/camera/rgb/camera_info", 1);
+    rgbInfoPub_ = nh_.advertise<sensor_msgs::CameraInfo>("/"+camera+"/rgb/camera_info", 1);
 
     rate_ = new ros::Rate(100);
 
@@ -244,14 +252,14 @@ public:
     this->getDepth();
 
     // If required, publish point_cloud
-    if (pointCloudPub_.getNumSubscribers() > 0)
-    {
-      this->getPointCloud();
-    }
+    // if (pointCloudPub_.getNumSubscribers() > 0)
+    // {
+    //   this->getPointCloud();
+    // }
 
 
     // Broadcast the depth camera info
-    depthInfoPub_.publish(this->fillCameraInfo(ros::Time::now(), false));
+    // depthInfoPub_.publish(this->fillCameraInfo(ros::Time::now(), false));
 
     // Broadcast the joint frames (if they exist)
     this->getSkeleton();
@@ -292,15 +300,15 @@ private:
       {
         // Convert the cv image in a ROSy format
         msg_ = cv_bridge::CvImage(std_msgs::Header(), "rgb8", mImageRGB).toImageMsg();
-        msg_->header.frame_id = camera_frame_;
+        msg_->header.frame_id = rgb_frame;
         msg_->header.stamp = ros::Time::now();
         imagePub_.publish(msg_);
+        // Publish the rgb camera info
+        rgbInfoPub_.publish(this->fillCameraInfo(msg_->header.stamp, true));
         // cv::flip(mImageRGB, mImageRGB, 1);
         mImageRGB.copyTo(mImage);
 
         msg_ = cv_bridge::CvImage(std_msgs::Header(), "rgb8", mImageRGB).toImageMsg();
-        // Publish the rgb camera info
-        rgbInfoPub_.publish(this->fillCameraInfo(ros::Time::now(), true));
       }
       else
       {
@@ -352,7 +360,7 @@ private:
 
       float constant = 0.001 / dev.getDepthFocalLength(depthFrame_.getHeight());
 
-      cloud_msg->header.frame_id = relative_frame_;
+      cloud_msg->header.frame_id = depth_frame;
 
       int color_idx = 0, depth_idx = 0;
       pcl::PointCloud<pcl::PointXYZRGB>::iterator pt_iter = cloud_msg->begin();
@@ -406,15 +414,16 @@ private:
                               CV_16UC1,
                               pData);
 
-      image.convertTo(image, CV_32FC1, 0.001);
-    //  cv::flip(image, image, 1);
+      // image.convertTo(image, CV_32FC1, 0.001);
+      // cv::flip(image, image, 1);
       cv_bridge::CvImage out_msg;
       out_msg.header.stamp = ros::Time::now();
-      out_msg.encoding = sensor_msgs::image_encodings::TYPE_32FC1;
+      out_msg.encoding = sensor_msgs::image_encodings::TYPE_16UC1;
       out_msg.image = image;
 
-      out_msg.header.frame_id = camera_frame_;
+      out_msg.header.frame_id = depth_frame;
       depthPub_.publish(out_msg.toImageMsg());
+      depthInfoPub_.publish(this->fillCameraInfo(out_msg.header.stamp, false));
     }
     else
     {
@@ -502,9 +511,9 @@ private:
       transform.setRotation(tf::Quaternion(0, 0, 0, 1));
       std::stringstream frame_id_stream;
       std::string frame_id;
-      frame_id_stream << "/" << tf_prefix_ << "/user_" << uid << "/" << j_name;
+      frame_id_stream << "/" << depth_frame << "/user_" << uid << "/" << j_name;
       frame_id = frame_id_stream.str();
-      tfBroadcast_.sendTransform(tf::StampedTransform(transform, ros::Time::now(), relative_frame_, frame_id));
+      tfBroadcast_.sendTransform(tf::StampedTransform(transform, ros::Time::now(), depth_frame, frame_id));
     }
     return;
   }
@@ -666,7 +675,7 @@ private:
     userPub_.publish(ids);
     // cv::flip(mImage, mImage, 1);
     msg_ = cv_bridge::CvImage(std_msgs::Header(), "rgb8", mImage).toImageMsg();
-    msg_->header.frame_id = camera_frame_;
+    msg_->header.frame_id = depth_frame;
     msg_->header.stamp = ros::Time::now();
     imageSKPub_.publish(msg_);
 
@@ -688,8 +697,13 @@ private:
       depthStream_.readFrame(&depthFrame_);
     }
 
+    if (is_rgb)
+    {
+      info_msg->header.frame_id = rgb_frame;
+    }
+
+    info_msg->header.frame_id = depth_frame;
     info_msg->header.stamp = time;
-    info_msg->header.frame_id = camera_frame_;
     info_msg->width = is_rgb ? mMode_.getResolutionX() : depthMode_.getResolutionX();
     info_msg->height = is_rgb ? mMode_.getResolutionY() : depthMode_.getResolutionY();
     info_msg->D = std::vector<double>(5, 0.0);
@@ -727,7 +741,7 @@ private:
 
   /// Image transport
   image_transport::ImageTransport it_;
-  std::string tf_prefix_, relative_frame_;
+  std::string depth_frame, rgb_frame, camera;
   /// Frame broadcaster
   tf::TransformBroadcaster tfBroadcast_;
   /// The openni device
@@ -774,7 +788,6 @@ private:
   /// Depth info publisher
   ros::Publisher depthInfoPub_;
 
-  std::string camera_frame_;
 
   // State of skeleton tracker publisher
   ros::Publisher skeleton_state_pub_;
