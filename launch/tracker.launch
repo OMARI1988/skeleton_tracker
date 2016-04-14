@@ -3,11 +3,10 @@
   <arg name="camera" default="camera" />
   <arg name="rgb_frame_id"   default="$(arg camera)_depth_optical_frame" />
   <arg name="depth_frame_id" default="$(arg camera)_depth_optical_frame" />
-	<arg name="pub_skeleton" default="True"/>
-	<arg name="stand_alone" default="False"/>
-    <arg name="log_skeleton" default="False"/>
-    <arg name="message_store" default="people_skeleton"/>
-
+  <arg name="pub_skeleton" default="True"/>
+  <arg name="stand_alone" default="False"/>
+  <arg name="log_skeleton" default="False"/>
+  <arg name="message_store" default="people_skeleton"/>
 
 	<node pkg="skeleton_tracker" type="xtion_tracker" name="skeleton_tracker" output="screen">
     	<param name="camera" type="string" value="/$(arg camera)"/>
@@ -15,16 +14,12 @@
     	<param name="depth_frame" type="string" value="/$(arg depth_frame_id)"/>
 	</node>
 
-
-
-
-    <group if="$(arg pub_skeleton)">
-	    <!-- Transforms /tf to /skeleton_data -->
-	    <node pkg="skeleton_tracker" type="skeleton_publisher.py" name="skeleton_publisher" output="screen">
-            <param name="log_skeleton" value="$(arg log_skeleton)" type="bool"/>
-            <param name="message_store" value="$(arg message_store)" type="string"/>
-	    </node>
-    </group>
-
+  <group if="$(arg pub_skeleton)">
+    <!-- Transforms /tf to /skeleton_data -->
+    <node pkg="skeleton_tracker" type="skeleton_publisher.py" name="skeleton_publisher" output="screen">
+          <param name="log_skeleton" value="$(arg log_skeleton)" type="bool"/>
+          <param name="message_store" value="$(arg message_store)" type="string"/>
+    </node>
+  </group>
 
 </launch>
