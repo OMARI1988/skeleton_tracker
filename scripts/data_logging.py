@@ -14,30 +14,17 @@ import sensor_msgs.msg
 import cv2
 from cv_bridge import CvBridge
 import getpass, datetime
-
+import actionlib
+import strands_gazing.msg
 
 class SkeletonImageLogger(object):
 
     def __init__(self, camera='head_xtion', database='message_store', collection='consent_images'):
         self.camera = camera
         self.baseFrame = '/'+self.camera+'_depth_optical_frame'
-        self.joints = [
-                'head',
-                'neck',
-                'torso',
-                'left_shoulder',
-                'left_elbow',
-                'left_hand',
-                'left_hip',
-                'left_knee',
-                'left_foot',
-                'right_shoulder',
-                'right_elbow',
-                'right_hand',
-                'right_hip',
-                'right_knee',
-                'right_foot',
-                ]
+        self.joints = ['head', 'neck', 'torso', 'left_shoulder', 'left_elbow', 'left_hand',
+                'left_hip', 'left_knee', 'left_foot', 'right_shoulder', 'right_elbow',
+                'right_hand', 'right_hip', 'right_knee', 'right_foot']
 
         # directory to store the data
         self.date = str(datetime.datetime.now().date())
@@ -47,6 +34,7 @@ class SkeletonImageLogger(object):
         if not os.path.exists(self.dir1):
             print '  -create folder:',self.dir1
             os.makedirs(self.dir1)
+
         # get the last skeleton recorded
         self.sk_mapping = {}
 
@@ -55,12 +43,15 @@ class SkeletonImageLogger(object):
         self._flag_rgb = 0
         self._flag_rgb_sk = 0
         self._flag_depth = 0
+        self.after_a_number_of_frames = 10
 
         # opencv stuff
         self.cv_bridge = CvBridge()
 
         # mongo store
         self.msg_store = MessageStoreProxy(collection=collection, database=database)
+
+        # publishers
         self.publish_consent_req = rospy.Publisher('skeleton_data/consent_req', String, queue_size = 10)
         self.publish_consent_pose = rospy.Publisher('skeleton_data/consent_pose', PoseStamped, queue_size = 10)
 
@@ -72,6 +63,9 @@ class SkeletonImageLogger(object):
         rospy.Subscriber('/'+self.camera+'/rgb/sk_tracks', sensor_msgs.msg.Image, callback=self.rgb_sk_callback, queue_size=10)
         rospy.Subscriber('/'+self.camera+'/rgb/white_sk_tracks', sensor_msgs.msg.Image, callback=self.white_sk_callback, queue_size=10)
         rospy.Subscriber('/'+self.camera+'/depth/image' , sensor_msgs.msg.Image, self.depth_callback, queue_size=10)
+
+        # gazing action server
+        self.gaze_client()
 
 
     def robot_callback(self, msg):
@@ -157,7 +151,7 @@ class SkeletonImageLogger(object):
                 if self.inc_sk.uuid in self.sk_mapping:
                     self.sk_mapping[self.inc_sk.uuid]['frame'] += 1
 
-                if self.sk_mapping[self.inc_sk.uuid]['frame'] == 10:
+                if self.sk_mapping[self.inc_sk.uuid]['frame'] == self.after_a_number_of_frames:
                     print "storing the 10th image to mongo..."
                     # Skeleton on white background
                     query = {"_meta.image_type": "white_sk_image"}
@@ -178,6 +172,15 @@ class SkeletonImageLogger(object):
                         head = Header(frame_id='head_xtion_depth_optical_frame')
                         look_at_pose = PoseStamped(header = head, pose=self.inc_sk.joints[0].pose)
                         self.publish_consent_pose.publish(look_at_pose)
+
+
+    def gaze_client(self):
+        rospy.loginfo("Creating gaze client")
+        self.gazeClient = actionlib.SimpleActionClient('gaze_at_pose', strands_gazing.msg.GazeAtPoseAction)
+        self.gazeClient.wait_for_server()
+        self.goal = strands_gazing.msg.GazeAtPoseGoal()
+        self.goal.topic_name = '/skeleton_data/consent_pose'
+
 
 
     def complete_callback(self, msg):
@@ -211,7 +214,7 @@ class SkeletonImageLogger(object):
         self.xtion_img_d = self.cv_bridge.imgmsg_to_cv2(imgmsg, desired_encoding="passthrough")
         self.xtion_img_d.setflags(write=True) # allow to change the values
         fgmask = cv2.convertScaleAbs(self.xtion_img_d) # cv2 stuff
-        self.xtion_img_d_rgb = cv2.cvtColor(fgmask,cv2.COLOR_GRAY2BGR) # cv2 stuff
+        self.xtion_img_d_rgb = cv2.cvtColor(fgmask, cv2.COLOR_GRAY2BGR) # cv2 stuff
         if self._flag_depth == 0:
             print 'depth recived'
             self._flag_depth = 1
