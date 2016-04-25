@@ -9,18 +9,20 @@ from std_msgs.msg import String
 from geometry_msgs.msg import Pose, Point, Quaternion
 # from strands_navigation_msgs.msg import TopologicalMap
 from skeleton_tracker.msg import joint_message, skeleton_tracker_state, skeleton_message, skeleton_complete
-# from mongodb_store.message_store import MessageStoreProxy
+from mongodb_store.message_store import MessageStoreProxy
 import sensor_msgs.msg
 import cv2
 from cv_bridge import CvBridge
 import os
 import datetime
+import getpass
 
 
-class SkeletonManager(object):
+class SkeletonImageLogger(object):
 
-    def __init__(self):
-        self.baseFrame = '/head_xtion_depth_optical_frame'
+    def __init__(self, camera='head_xtion', database='message_store', collection='consent_images'):
+        self.camera = camera
+        self.baseFrame = '/'+self.camera+'_depth_optical_frame'
         self.joints = [
                 'head',
                 'neck',
@@ -42,8 +44,8 @@ class SkeletonManager(object):
         # directory to store the data
         self.date = str(datetime.datetime.now().date())
         # self.dir1 = '/home/lucie02/Datasets/Lucie/'+self.date+'/'
-        self.dir1 = '/home/lucie02/Dropbox/Lucie/'+self.date+'/'
-        print 'checking if folder exists:',self.dir1
+        self.dir1 = '/home/' + getpass.getuser() + '/SkeletonDataset/'+self.date+'/'
+        print 'checking if folder exists:', self.dir1
         if not os.path.exists(self.dir1):
             print '  -create folder:',self.dir1
             os.makedirs(self.dir1)
@@ -59,13 +61,19 @@ class SkeletonManager(object):
         # opencv stuff
         self.cv_bridge = CvBridge()
 
+        # mongo store
+        self.msg_store = MessageStoreProxy(collection=collection, database=database)
+        self.publish_consent_req = rospy.Publisher('skeleton_data/consent_req', String, queue_size = 10)
+
         # listeners
         rospy.Subscriber("/robot_pose", Pose, callback=self.robot_callback, queue_size=10)
         rospy.Subscriber('skeleton_data/incremental', skeleton_message,callback=self.incremental_callback, queue_size = 10)
         rospy.Subscriber('skeleton_data/complete', skeleton_complete,callback=self.complete_callback, queue_size = 10)
-        rospy.Subscriber("/head_xtion/rgb/image_color", sensor_msgs.msg.Image, callback=self.rgb_callback, queue_size=10)
-        rospy.Subscriber("/camera/rgb/sk_tracks", sensor_msgs.msg.Image, callback=self.rgb_sk_callback, queue_size=10)
+        rospy.Subscriber('/'+self.camera+'/rgb/image_color', sensor_msgs.msg.Image, callback=self.rgb_callback, queue_size=10)
+        rospy.Subscriber('/'+self.camera+'/rgb/sk_tracks', sensor_msgs.msg.Image, callback=self.rgb_sk_callback, queue_size=10)
+        rospy.Subscriber('/'+self.camera+'/rgb/white_sk_tracks', sensor_msgs.msg.Image, callback=self.white_sk_callback, queue_size=10)
         # rospy.Subscriber("/camera/depth/image", sensor_msgs.msg.Image, callback=self.depth_callback, queue_size=10)
+        rospy.Subscriber('/'+self.camera+'/depth/image' , sensor_msgs.msg.Image, self.depth_callback)
 
 
     def robot_callback(self, msg):
@@ -79,7 +87,7 @@ class SkeletonManager(object):
         if str(datetime.datetime.now().date()) != self.date:
             print 'new day!'
             self.date = str(datetime.datetime.now().date())
-            self.dir1 = '/home/lucie02/Dropbox/Lucie/'+self.date+'/'
+            self.dir1 = '/home/' + getpass.getuser() + '/SkeletonDataset/'+self.date+'/'
             print 'checking if folder exists:',self.dir1
             if not os.path.exists(self.dir1):
                 print '  -create folder:',self.dir1
@@ -96,6 +104,7 @@ class SkeletonManager(object):
                 if not os.path.exists(self.dir1+t+self.inc_sk.uuid):
                     os.makedirs(self.dir1+t+self.inc_sk.uuid)
                     os.makedirs(self.dir1+t+self.inc_sk.uuid+'/rgb')
+                    os.makedirs(self.dir1+t+self.inc_sk.uuid+'/depth')
                     os.makedirs(self.dir1+t+self.inc_sk.uuid+'/rgb_sk')
                     os.makedirs(self.dir1+t+self.inc_sk.uuid+'/robot')
                     os.makedirs(self.dir1+t+self.inc_sk.uuid+'/skeleton')
@@ -113,7 +122,8 @@ class SkeletonManager(object):
 
                 # save rgb image
                 cv2.imwrite(d+'rgb/rgb_'+f_str+'.jpg',self.rgb)
-                # cv2.imwrite(d+'rgb_sk/sk_'+f_str+'.jpg',self.rgb_sk)
+                cv2.imwrite(d+'depth/depth_'+f_str+'.jpg',self.xtion_img_d_rgb)
+                cv2.imwrite(d+'rgb_sk/sk_'+f_str+'.jpg',self.rgb_sk)
 
                 # save robot_pose
                 f1 = open(d+'robot/robot_'+f_str+'.txt','w')
@@ -149,35 +159,60 @@ class SkeletonManager(object):
                 if self.inc_sk.uuid in self.sk_mapping:
                     self.sk_mapping[self.inc_sk.uuid]['frame'] += 1
 
+                if self.sk_mapping[self.inc_sk.uuid]['frame'] == 10:
+                    print "storing the 10th image to mongo..."
+                    # Skeleton on white background
+                    query = {"_meta.image_type": "white_sk_image"}
+                    white_sk_to_mongo =  self.msg_store.update(message=self.white_sk_msg, meta={'image_type':"white_sk_image"}, message_query=query, upsert=True)
+                    # Skeleton on rgb background
+                    query = {"_meta.image_type": "rgb_sk_image"}
+                    rgb_sk_img_to_mongo = self.msg_store.update(message=self.rgb_sk_msg, meta={'image_type':"rgb_sk_image"}, message_query=query, upsert=True)
+                    # Skeleton on depth background
+                    query = {"_meta.image_type": "depth_image"}
+                    depth_img_to_mongo = self.msg_store.update(message=self.depth_msg, meta={'image_type':"depth_image"}, message_query=query, upsert=True)
+
+                    consent_msg = "Check_consent_%s" % (t)
+                    print consent_msg
+                    self.publish_consent_req.publish(consent_msg)
+
     def complete_callback(self, msg):
         print '  -stopped logging user:',msg.uuid
         self.sk_mapping.pop(msg.uuid,None)
         # self.robot_pose = msg
 
     def rgb_callback(self, msg1):
+        self.rgb_msg = msg1
         rgb = self.cv_bridge.imgmsg_to_cv2(msg1, desired_encoding="passthrough")
         self.rgb = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
+
         if self._flag_rgb == 0:
             print 'rgb recived'
             self._flag_rgb = 1
 
     def rgb_sk_callback(self, msg1):
+        self.rgb_sk_msg = msg1
         rgb = self.cv_bridge.imgmsg_to_cv2(msg1, desired_encoding="passthrough")
         self.rgb_sk = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
         if self._flag_rgb_sk == 0:
             print 'rgb+sk recived'
             self._flag_rgb_sk = 1
 
-    # def depth_callback(self, msg):
-    #     self.depth = self.cv_bridge.imgmsg_to_cv2(msg, desired_encoding="passthrough")
-    #     if self._flag_depth == 0:
-    #         print 'depth recived'
-    #         self._flag_depth = 1
+    def white_sk_callback(self, msg1):
+        self.white_sk_msg = msg1
+
+    def depth_callback(self, imgmsg):
+        self.depth_msg = imgmsg
+        self.xtion_img_d = self.cv_bridge.imgmsg_to_cv2(imgmsg, desired_encoding="passthrough")
+        self.xtion_img_d.setflags(write=True) # allow to change the values
+        fgmask = cv2.convertScaleAbs(self.xtion_img_d) # cv2 stuff
+        self.xtion_img_d_rgb = cv2.cvtColor(fgmask,cv2.COLOR_GRAY2BGR) # cv2 stuff
+
+
 
 if __name__ == '__main__':
-    rospy.init_node('skeleton_publisher', anonymous=True)
+    rospy.init_node('skeleton_image_logger', anonymous=True)
 
-    sk_manager = SkeletonManager()
+    sk_images = SkeletonImageLogger()
     while not rospy.is_shutdown():
         # if str(datetime.datetime.now().date()) != sk_manager.date:
         #     print 'new day!'
@@ -187,5 +222,4 @@ if __name__ == '__main__':
         #     if not os.path.exists(sk_manager.dir1):
         #         print '  -create folder:',sk_manager.dir1
         #         os.makedirs(sk_manager.dir1)
-
         pass

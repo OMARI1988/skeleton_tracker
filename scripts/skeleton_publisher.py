@@ -59,7 +59,7 @@ class SkeletonManager(object):
 
         # only publish the skeleton data when the person is far enough away (distance threshold)
         self.frame_thresh = 3500
-        self.dist_thresh = 1.5
+        self.dist_thresh = 1.0
         self.dist_flag = 1
 
         # initialise data to recieve tf data
@@ -92,18 +92,18 @@ class SkeletonManager(object):
                 for i in self.joints:
                     if self.tf_listener.frameExists(self.baseFrame) and joints_found:
                         try:
-                            tp = self.tf_listener.getLatestCommonTime(self.baseFrame,  "tracker/user_%d/%s" % (subj, i))
+                            tp = self.tf_listener.getLatestCommonTime(self.baseFrame, self.baseFrame+"/user_%d/%s" % (subj, i))
+                            # print self.baseFrame+"/user_%d/%s" % (subj, i), tp
                             if tp != self.data[subj][i]['t_old']:
                                 self.data[subj][i]['t_old'] = tp
                                 self.data[subj]['flag'] = 1
                                 (self.data[subj][i]['value'], self.data[subj][i]['rot']) = \
-                                    self.tf_listener.lookupTransform(self.baseFrame, "tracker/user_%d/%s" % (subj, i), rospy.Time(0))
+                                    self.tf_listener.lookupTransform(self.baseFrame, self.baseFrame+"/user_%d/%s" % (subj, i), rospy.Time(0))
 
-                        except (tf.Exception, tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+                        except (tf.Exception, tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException) as e:
                             joints_found = False
                             self.data[subj]['flag'] = 0  #don't publish part of this Users skeleton
                             continue
-
 
                 # stop tracking this user after this much frames
                 if "frame" in self.users[subj]:
