@@ -45,7 +45,6 @@ class ImageDeleter(object):
         print 'del ', self.del_window_start,  self.del_window_end
 
 
-
     def consent_req_callback(self, msg):
         self.consent_req = msg
 
@@ -56,7 +55,7 @@ class ImageDeleter(object):
             rospy.sleep(10.*60)
 
         elif self.consent_ret == "nothing":
-            
+
 
 if __name__ == '__main__':
     rospy.init_node('skeleton_image_logger', anonymous=True)

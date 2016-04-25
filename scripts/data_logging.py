@@ -4,18 +4,16 @@ import roslib
 roslib.load_manifest('tf')
 import rospy
 import tf
-import sys
-from std_msgs.msg import String
-from geometry_msgs.msg import Pose, Point, Quaternion
+import sys, os
+from std_msgs.msg import Header, String
+from geometry_msgs.msg import PoseStamped, Pose, Point, Quaternion
 # from strands_navigation_msgs.msg import TopologicalMap
 from skeleton_tracker.msg import joint_message, skeleton_tracker_state, skeleton_message, skeleton_complete
 from mongodb_store.message_store import MessageStoreProxy
 import sensor_msgs.msg
 import cv2
 from cv_bridge import CvBridge
-import os
-import datetime
-import getpass
+import getpass, datetime
 
 
 class SkeletonImageLogger(object):
@@ -56,7 +54,7 @@ class SkeletonImageLogger(object):
         self._flag_robot = 0
         self._flag_rgb = 0
         self._flag_rgb_sk = 0
-        # self._flag_depth = 0
+        self._flag_depth = 0
 
         # opencv stuff
         self.cv_bridge = CvBridge()
@@ -64,6 +62,7 @@ class SkeletonImageLogger(object):
         # mongo store
         self.msg_store = MessageStoreProxy(collection=collection, database=database)
         self.publish_consent_req = rospy.Publisher('skeleton_data/consent_req', String, queue_size = 10)
+        self.publish_consent_pose = rospy.Publisher('skeleton_data/consent_pose', PoseStamped, queue_size = 10)
 
         # listeners
         rospy.Subscriber("/robot_pose", Pose, callback=self.robot_callback, queue_size=10)
@@ -72,8 +71,7 @@ class SkeletonImageLogger(object):
         rospy.Subscriber('/'+self.camera+'/rgb/image_color', sensor_msgs.msg.Image, callback=self.rgb_callback, queue_size=10)
         rospy.Subscriber('/'+self.camera+'/rgb/sk_tracks', sensor_msgs.msg.Image, callback=self.rgb_sk_callback, queue_size=10)
         rospy.Subscriber('/'+self.camera+'/rgb/white_sk_tracks', sensor_msgs.msg.Image, callback=self.white_sk_callback, queue_size=10)
-        # rospy.Subscriber("/camera/depth/image", sensor_msgs.msg.Image, callback=self.depth_callback, queue_size=10)
-        rospy.Subscriber('/'+self.camera+'/depth/image' , sensor_msgs.msg.Image, self.depth_callback)
+        rospy.Subscriber('/'+self.camera+'/depth/image' , sensor_msgs.msg.Image, self.depth_callback, queue_size=10)
 
 
     def robot_callback(self, msg):
@@ -175,6 +173,13 @@ class SkeletonImageLogger(object):
                     print consent_msg
                     self.publish_consent_req.publish(consent_msg)
 
+                    #look at person:
+                    if self.inc_sk.joints[0].name == 'head':
+                        head = Header(frame_id='head_xtion_depth_optical_frame')
+                        look_at_pose = PoseStamped(header = head, pose=self.inc_sk.joints[0].pose)
+                        self.publish_consent_pose.publish(look_at_pose)
+
+
     def complete_callback(self, msg):
         print '  -stopped logging user:',msg.uuid
         self.sk_mapping.pop(msg.uuid,None)
@@ -200,13 +205,16 @@ class SkeletonImageLogger(object):
     def white_sk_callback(self, msg1):
         self.white_sk_msg = msg1
 
+
     def depth_callback(self, imgmsg):
         self.depth_msg = imgmsg
         self.xtion_img_d = self.cv_bridge.imgmsg_to_cv2(imgmsg, desired_encoding="passthrough")
         self.xtion_img_d.setflags(write=True) # allow to change the values
         fgmask = cv2.convertScaleAbs(self.xtion_img_d) # cv2 stuff
         self.xtion_img_d_rgb = cv2.cvtColor(fgmask,cv2.COLOR_GRAY2BGR) # cv2 stuff
-
+        if self._flag_depth == 0:
+            print 'depth recived'
+            self._flag_depth = 1
 
 
 if __name__ == '__main__':
