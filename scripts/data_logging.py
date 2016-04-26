@@ -15,7 +15,10 @@ import cv2
 from cv_bridge import CvBridge
 import getpass, datetime
 import actionlib
+import yaml
 import strands_gazing.msg
+import topological_navigation.msg 
+
 
 class SkeletonImageLogger(object):
 
@@ -54,6 +57,7 @@ class SkeletonImageLogger(object):
         # publishers
         self.publish_consent_req = rospy.Publisher('skeleton_data/consent_req', String, queue_size = 10)
         self.publish_consent_pose = rospy.Publisher('skeleton_data/consent_pose', PoseStamped, queue_size = 10)
+	self.publish_consent_req.publish("init")
 
         # listeners
         rospy.Subscriber("/robot_pose", Pose, callback=self.robot_callback, queue_size=10)
@@ -66,7 +70,13 @@ class SkeletonImageLogger(object):
 
         # gazing action server
         self.gaze_client()
-
+	
+	# topo nav move
+	self.filepath = os.path.join(roslib.packages.get_pkg_dir("skeleton_tracker"), "config")
+	self.config = yaml.load(open(os.path.join(self.filepath, 'config.ini'), 'r'))
+	print "config loaded:", self.config
+	self.nav_client()
+	
 
     def robot_callback(self, msg):
         self.robot_pose = msg
@@ -166,21 +176,34 @@ class SkeletonImageLogger(object):
                     consent_msg = "Check_consent_%s" % (t)
                     print consent_msg
                     self.publish_consent_req.publish(consent_msg)
+                    self.gazeClient.send_goal(self.gazegoal)
+		    self.navClient.send_goal(self.navgoal)
+                
 
-                    #look at person:
-                    if self.inc_sk.joints[0].name == 'head':
-                        head = Header(frame_id='head_xtion_depth_optical_frame')
-                        look_at_pose = PoseStamped(header = head, pose=self.inc_sk.joints[0].pose)
-                        self.publish_consent_pose.publish(look_at_pose)
+		#publish the gaze request of person all the time:
+                if self.inc_sk.joints[0].name == 'head':
+                    head = Header(frame_id='head_xtion_depth_optical_frame')
+                    look_at_pose = PoseStamped(header = head, pose=self.inc_sk.joints[0].pose)
+                    self.publish_consent_pose.publish(look_at_pose)
 
 
     def gaze_client(self):
         rospy.loginfo("Creating gaze client")
         self.gazeClient = actionlib.SimpleActionClient('gaze_at_pose', strands_gazing.msg.GazeAtPoseAction)
         self.gazeClient.wait_for_server()
-        self.goal = strands_gazing.msg.GazeAtPoseGoal()
-        self.goal.topic_name = '/skeleton_data/consent_pose'
+        self.gazegoal = strands_gazing.msg.GazeAtPoseGoal()
+        self.gazegoal.topic_name = '/skeleton_data/consent_pose'
+        self.gazegoal.runtime_sec = 20
 
+    def nav_client(self):
+	rospy.loginfo("Creating nav client")
+	self.navClient = actionlib.SimpleActionClient('topological_navigation', topological_navigation.msg.GotoNodeAction)
+	self.navClient.wait_for_server()	
+	self.navgoal = topological_navigation.msg.GotoNodeGoal()
+	t = self.config["WayPoint3"]
+	print t, t['target']
+	self.navgoal.target = t['target']
+	
 
 
     def complete_callback(self, msg):
