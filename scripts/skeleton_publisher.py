@@ -15,25 +15,11 @@ class SkeletonManager(object):
 
     def __init__(self):
         self.baseFrame = '/head_xtion_depth_optical_frame'
-        self.joints = [
-                'head',
-                'neck',
-                'torso',
-                'left_shoulder',
-                'left_elbow',
-                'left_hand',
-                'left_hip',
-                'left_knee',
-                'left_foot',
-                'right_shoulder',
-                'right_elbow',
-                'right_hand',
-                'right_hip',
-                'right_knee',
-                'right_foot',
-                ]
+        self.joints = ['head', 'neck', 'torso', 'left_shoulder', 'left_elbow', 'left_hand',
+                'left_hip', 'left_knee', 'left_foot', 'right_shoulder', 'right_elbow',
+                'right_hand', 'right_hip', 'right_knee', 'right_foot']
 
-        self.data = {} #c urrent tf frame data for 15 joints
+        self.data = {} #current tf frame data for 15 joints
         self.accumulate_data = {} # accumulates multiple tf frames
         self.users = {} # keeps the tracker state message, timepoint and UUID
         self.map_info = "don't know"  # topological map name
@@ -85,81 +71,84 @@ class SkeletonManager(object):
                 self.data[subj][i]['t_old'] = 0
 
 
-    def _get_tf_data(self):
-        while not rospy.is_shutdown():
-            for subj in xrange(1,11):
-                joints_found = True
-                for i in self.joints:
-                    if self.tf_listener.frameExists(self.baseFrame) and joints_found:
-                        try:
-                            tp = self.tf_listener.getLatestCommonTime(self.baseFrame, self.baseFrame+"/user_%d/%s" % (subj, i))
-                            # print self.baseFrame+"/user_%d/%s" % (subj, i), tp
-                            if tp != self.data[subj][i]['t_old']:
-                                self.data[subj][i]['t_old'] = tp
-                                self.data[subj]['flag'] = 1
-                                (self.data[subj][i]['value'], self.data[subj][i]['rot']) = \
-                                    self.tf_listener.lookupTransform(self.baseFrame, self.baseFrame+"/user_%d/%s" % (subj, i), rospy.Time(0))
+    def _get_tf_data(self): 
+	    for subj in xrange(1,11):
+		joints_found = True
+		for i in self.joints:
+		    if self.tf_listener.frameExists(self.baseFrame) and joints_found:
+		        try:
+		            tp = self.tf_listener.getLatestCommonTime(self.baseFrame, self.baseFrame+"/user_%d/%s" % (subj, i))
+		            # print self.baseFrame+"/user_%d/%s" % (subj, i), tp
+		            if tp != self.data[subj][i]['t_old']:
+		                self.data[subj][i]['t_old'] = tp
+		                self.data[subj]['flag'] = 1
+		                (self.data[subj][i]['value'], self.data[subj][i]['rot']) = \
+		                    self.tf_listener.lookupTransform(self.baseFrame, self.baseFrame+"/user_%d/%s" % (subj, i), rospy.Time(0))
 
-                        except (tf.Exception, tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException) as e:
-                            joints_found = False
-                            self.data[subj]['flag'] = 0  #don't publish part of this Users skeleton
-                            continue
+		        except (tf.Exception, tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException) as e:
+		            joints_found = False
+		            self.data[subj]['flag'] = 0  #don't publish part of this Users skeleton
+		            continue
 
-                # stop tracking this user after this much frames
-                if "frame" in self.users[subj]:
-                    if self.users[subj]["frame"] >= self.frame_thresh:
-                        self.users[subj]["message"] = "Out of Scene"
-                        self.data[subj]['flag'] = 0
+		# stop tracking this user after this much frames
+		if "frame" in self.users[subj]:
+		    if self.users[subj]["frame"] >= self.frame_thresh:
+		        self.users[subj]["message"] = "Out of Scene"
+		        self.data[subj]['flag'] = 0
 
-                #If the tracker_state is 'Out of Scene' publish the accumulated skeleton
-                if self.users[subj]["message"] == "Out of Scene" and subj in self.accumulate_data:
-                    self._publish_complete_data(subj)
-                    self.data[subj]['flag'] = 0
+		#If the tracker_state is 'Out of Scene' publish the accumulated skeleton
+		if self.users[subj]["message"] == "Out of Scene" and subj in self.accumulate_data:
+		    self._publish_complete_data(subj)
+		    self.data[subj]['flag'] = 0
 
 
-            #For all subjects, publish the incremental skeleton and accumulate into self.data also.
-            list_of_subs = [subj for subj in self.data if self.data[subj]['flag'] == 1]
-            # print ">>>", list_of_subs
-            for subj in list_of_subs:
-                if self.users[subj]["message"] != "New":
-                    continue  # this catches cases where a User leaves the scene but they still have /tf data
-                self.dist_flag = 1      # initiate the distance threshold flag to 1
+	    #For all subjects, publish the incremental skeleton and accumulate into self.data also.
+	    list_of_subs = [subj for subj in self.data if self.data[subj]['flag'] == 1]
 
-                # print ">", subj,self.users[subj]["message"],self.users[subj]["frame"]
-                incr_msg = skeleton_message()
-                incr_msg.userID = subj
-                incr_msg.uuid = self.users[subj]["uuid"]
-                for i in self.joints:
-                    joint = joint_message()
-                    joint.name = i
-                    joint.time = self.data[subj][i]['t_old']
+	    # if no subjects detected:
+	    incr_msg = skeleton_message()
+	    for subj in list_of_subs:
+		if self.users[subj]["message"] != "New":
+		    continue  # this catches cases where a User leaves the scene but they still have /tf data
+		self.dist_flag = 1      # initiate the distance threshold flag to 1
 
-                    position = Point(x = self.data[subj][i]['value'][0], \
-                               y = self.data[subj][i]['value'][1], z = self.data[subj][i]['value'][2])
-                    rot = Quaternion(x = self.data[subj][i]['rot'][0], y = self.data[subj][i]['rot'][1],
-                               z = self.data[subj][i]['rot'][2], w = self.data[subj][i]['rot'][3])
-                    if self.data[subj][i]['value'][2] <= self.dist_thresh:
-                        self.dist_flag = 0
-                    joint.pose.position = position
-                    joint.pose.orientation = rot
-                    incr_msg.joints.append(joint)
-                self.data[subj]['flag'] = 0
+		# print ">", subj,self.users[subj]["message"],self.users[subj]["frame"]
+		incr_msg = skeleton_message()
+		incr_msg.userID = subj
+		incr_msg.uuid = self.users[subj]["uuid"]
+		for i in self.joints:
+		    joint = joint_message()
+		    joint.name = i
+		    joint.time = self.data[subj][i]['t_old']
 
-                if self.dist_flag:
-                    #publish the instant frame message on /incremental topic
-                    self.publish_incr.publish(incr_msg)
-                    #update a frame
-                    self.users[subj]["frame"] += 1
+		    position = Point(x = self.data[subj][i]['value'][0], \
+		               y = self.data[subj][i]['value'][1], z = self.data[subj][i]['value'][2])
+		    rot = Quaternion(x = self.data[subj][i]['rot'][0], y = self.data[subj][i]['rot'][1],
+		               z = self.data[subj][i]['rot'][2], w = self.data[subj][i]['rot'][3])
+		    if self.data[subj][i]['value'][2] <= self.dist_thresh:
+		        self.dist_flag = 0
+		    joint.pose.position = position
+		    joint.pose.orientation = rot
+		    incr_msg.joints.append(joint)
+		self.data[subj]['flag'] = 0
 
-                    #accumulate the messages
-                    if self.users[subj]["message"] == "New":
-                        self._accumulate_data(subj, incr_msg)
-                    elif self.users[subj]["message"] == "No message":
-                        print "Just published this user. They are not back yet, get over it."
-                    else:
-                        raise RuntimeError("this should never have occured; why is message not `New` or `Out of Scene' ??? ")
+		if self.dist_flag:
+		    #publish the instant frame message on /incremental topic
+		    self.publish_incr.publish(incr_msg)
+		    #update a frame
+		    self.users[subj]["frame"] += 1
 
-            self.rate.sleep()
+		    #accumulate the messages
+		    if self.users[subj]["message"] == "New":
+		        self._accumulate_data(subj, incr_msg)
+		    elif self.users[subj]["message"] == "No message":
+		        print "Just published this user. They are not back yet, get over it."
+		    else:
+		        raise RuntimeError("this should never have occured; why is message not `New` or `Out of Scene' ??? ")
+
+	    # publish this for the action server
+            if len(list_of_subs) == 0:
+                self.publish_incr.publish(incr_msg)
 
 
     def _accumulate_data(self, subj, current_msg):
@@ -213,8 +202,6 @@ class SkeletonManager(object):
         # get the topological map name
         self.map_info = msg.map
         self.topo_listerner.unregister()
-
-
 
     def publish_skeleton(self):
         self._get_tf_data()

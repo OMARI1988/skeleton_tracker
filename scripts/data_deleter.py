@@ -2,13 +2,14 @@
 import roslib
 import rospy
 import sys, os
+import datetime
+import getpass
 from std_msgs.msg import String
 from mongodb_store.message_store import MessageStoreProxy
 import sensor_msgs.msg
-import datetime
-import getpass
+from skeleton_tracker.srv import *
 
-
+"""
 class ImageDeleter(object):
 
     def __init__(self, database='message_store', collection='people_skeleton'):
@@ -53,14 +54,29 @@ class ImageDeleter(object):
         self.consent_ret = msg
         if self.consent_ret == "everything":
             rospy.sleep(10.*60)
-
         elif self.consent_ret == "nothing":
+"""
+
+
+def remover_of_images(req):
+    start_time = req.time
+    uuid = req.uuid
+    consent = req.consent
+    print "removing: ", start_time, consent
+
+    return DeleteImagesResponse(True)
+
+
+def execute():
+    rospy.init_node('skeleton_image_logger', anonymous=True)
+                       #service_name      #service_prototype  #handler_function
+    s = rospy.Service('/delete_images_service', DeleteImages,  remover_of_images)
+    rospy.spin()
+
 
 
 if __name__ == '__main__':
     rospy.init_node('skeleton_image_logger', anonymous=True)
-
-    deleter = ImageDeleter()
-
-    while not rospy.is_shutdown():
-        deleter.remover_of_images()
+    execute()
+    # deleter = ImageDeleter()
+    # deleter.remover_of_images()

@@ -1,0 +1,5 @@
+string time
+string uuid
+string consent
+---
+bool result
