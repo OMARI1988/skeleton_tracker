@@ -40,7 +40,7 @@ openni2_tracker
     ```bash
     roslaunch skeleton_tracker tracker.launch camera:=head_xtion log_skeleton:=True message_store:=people_skeleton
 
-    rosaunch openni2_launch openni2.launch camera:=head_xtion load_driver:=False depth_registration:=True debayer_processing:=True sw_registered_processing:=True
+    roslaunch openni2_launch openni2.launch camera:=head_xtion load_driver:=False depth_registration:=True debayer_processing:=True sw_registered_processing:=True
     ```
 
 

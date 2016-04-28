@@ -24,8 +24,8 @@ class skeleton_server(object):
         self.skeleton_msg = skeleton_message()  #default empty
         self.filepath = os.path.join(roslib.packages.get_pkg_dir("skeleton_tracker"), "config")
         try:
-    	    self.config = yaml.load(open(os.path.join(self.filepath, 'config.ini'), 'r'))
-    	    # print "config loaded:", self.config
+            self.config = yaml.load(open(os.path.join(self.filepath, 'config.ini'), 'r'))
+            # print "config loaded:", self.config
         except:
             print "no config file found"
 
@@ -46,16 +46,15 @@ class skeleton_server(object):
             if self._as.is_preempt_requested():
                 self.reset_ptu()
                 return self._as.set_preempted()
-
             self.set_ptu_state(goal.waypoint)
             self.sk_manager.publish_skeleton()
-	        rospy.sleep(0.01)  # wait until something is published
-	        if self.skeleton_msg.uuid != "":
+            rospy.sleep(0.01)  # wait until something is published
+            if self.skeleton_msg.uuid != "":
                 self.image_logger.callback(self.skeleton_msg, goal.waypoint)
-	            print "c", self.image_logger.consent_ret
+                print "c", self.image_logger.consent_ret
 
-	        if self.image_logger.consent_ret != None:
-	            break
+            if self.image_logger.consent_ret != None:
+                break
             end = rospy.Time.now()
         self.reset_ptu()
         self.image_logger.consent_ret = None
@@ -75,14 +74,14 @@ class skeleton_server(object):
 
     def set_ptu_state(self, waypoint):
         ptu_goal = PtuGotoGoal();
-	try:
-	    ptu_goal.pan = self.config[waypoint]['pan']
-        ptu_goal.tilt = self.config[waypoint]['tilt']
-        ptu_goal.pan_vel = self.config[waypoint]['pvel']
-        ptu_goal.tilt_vel = self.config[waypoint]['tvel']
-        self.ptu_action_client.send_goal(ptu_goal)
-	except KeyError:
-        self.reset_ptu()
+        try:
+            ptu_goal.pan = self.config[waypoint]['pan']
+            ptu_goal.tilt = self.config[waypoint]['tilt']
+            ptu_goal.pan_vel = self.config[waypoint]['pvel']
+            ptu_goal.tilt_vel = self.config[waypoint]['tvel']
+            self.ptu_action_client.send_goal(ptu_goal)
+        except KeyError:
+            self.reset_ptu()
 
 
 if __name__ == "__main__":
