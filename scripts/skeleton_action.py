@@ -68,8 +68,8 @@ class skeleton_server(object):
         ptu_goal = PtuGotoGoal();
         ptu_goal.pan = 0
         ptu_goal.tilt = 0
-        ptu_goal.pan_vel = 20
-        ptu_goal.tilt_vel = 20
+        ptu_goal.pan_vel = 30
+        ptu_goal.tilt_vel = 30
         self.ptu_action_client.send_goal(ptu_goal)
 
     def set_ptu_state(self, waypoint):

@@ -44,8 +44,10 @@ class SkeletonImageLogger(object):
             os.makedirs(self.dir1)
 
         self.filepath = os.path.join(roslib.packages.get_pkg_dir("skeleton_tracker"), "config")
-        self.config = yaml.load(open(os.path.join(self.filepath, 'config.ini'), 'r'))
-        print "config loaded:", self.config
+        try:
+            self.config = yaml.load(open(os.path.join(self.filepath, 'config.ini'), 'r'))
+        except:
+            print "no config file found"
 
         # PTU state - based upon current_node callback
         self.ptu_action_client = actionlib.SimpleActionClient('/SetPTUState', PtuGotoAction)
@@ -219,13 +221,13 @@ class SkeletonImageLogger(object):
                     if self.request_sent_flag:
                         self.speaker.send_goal(maryttsGoal(text=self.speech))
 
-            # Move Eyes?
-            #if self.request_sent_flag = 0:
-
+                    # Move Eyes?
+        #if self.request_sent_flag = 0:
         return self.consent_ret
 
     def go_back_to_where_I_came_from(self):
         self.navgoal.target = self.config[self.previous_target]['target']
+        print "no target waypoint - staying at %s" % self.navgoal.target
         self.navClient.send_goal(self.navgoal)
         self.navClient.wait_for_result()
 
