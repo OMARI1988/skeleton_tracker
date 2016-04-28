@@ -18,7 +18,7 @@ import getpass, datetime
 import actionlib
 from scitos_ptu.msg import *
 import strands_gazing.msg
-import topological_navigation.msg 
+import topological_navigation.msg
 from mary_tts.msg import maryttsAction, maryttsGoal
 from skeleton_tracker.srv import *
 
@@ -43,14 +43,14 @@ class SkeletonImageLogger(object):
             print '  -create folder:',self.dir1
             os.makedirs(self.dir1)
 
-	self.filepath = os.path.join(roslib.packages.get_pkg_dir("skeleton_tracker"), "config")
-	self.config = yaml.load(open(os.path.join(self.filepath, 'config.ini'), 'r'))
-	print "config loaded:", self.config
-	
+        self.filepath = os.path.join(roslib.packages.get_pkg_dir("skeleton_tracker"), "config")
+        self.config = yaml.load(open(os.path.join(self.filepath, 'config.ini'), 'r'))
+        print "config loaded:", self.config
+
         # PTU state - based upon current_node callback
-	self.ptu_action_client = actionlib.SimpleActionClient('/SetPTUState', PtuGotoAction)
+	    self.ptu_action_client = actionlib.SimpleActionClient('/SetPTUState', PtuGotoAction)
         self.ptu_action_client.wait_for_server()
-	
+
         # get the last skeleton recorded
         self.sk_mapping = {}
 
@@ -59,9 +59,9 @@ class SkeletonImageLogger(object):
         self._flag_rgb = 0
         self._flag_rgb_sk = 0
         self._flag_depth = 0
-	self.request_sent_flag = 0
+	    self.request_sent_flag = 0
         self.after_a_number_of_frames = 10
-	self.consent_ret = None
+	    self.consent_ret = None
 
         # opencv stuff
         self.cv_bridge = CvBridge()
@@ -72,7 +72,7 @@ class SkeletonImageLogger(object):
         # publishers
         self.publish_consent_req = rospy.Publisher('skeleton_data/consent_req', String, queue_size = 10)
         self.publish_consent_pose = rospy.Publisher('skeleton_data/consent_pose', PoseStamped, queue_size = 10)
-	self.publish_consent_req.publish("init")
+        self.publish_consent_req.publish("init")
 
         # listeners
         # rospy.Subscriber("/current_node", String, callback=self.curr_node_callback, queue_size=1)
@@ -86,14 +86,14 @@ class SkeletonImageLogger(object):
         rospy.Subscriber('/'+self.camera+'/rgb/white_sk_tracks', sensor_msgs.msg.Image, callback=self.white_sk_callback, queue_size=10)
         rospy.Subscriber('/'+self.camera+'/depth/image' , sensor_msgs.msg.Image, self.depth_callback, queue_size=10)
 
-	# gazing action server
-	self.gaze_client()
- 
+    	# gazing action server
+    	self.gaze_client()
+
         # topo nav move
-	self.nav_client()
-	
+    	self.nav_client()
+
         # speak
-	self.speak()
+    	self.speak()
 
 
     def robot_callback(self, msg):
@@ -141,7 +141,7 @@ class SkeletonImageLogger(object):
                 elif f < 100000:          f_str = str(f)
 
                 # save rgb image
-		# todo: make these rosbags sometime in the future
+		        # todo: make these rosbags sometime in the future
                 cv2.imwrite(d+'rgb/rgb_'+f_str+'.jpg',self.rgb)
                 cv2.imwrite(d+'depth/depth_'+f_str+'.jpg',self.xtion_img_d_rgb)
                 cv2.imwrite(d+'rgb_sk/sk_'+f_str+'.jpg',self.rgb_sk)
@@ -180,15 +180,15 @@ class SkeletonImageLogger(object):
                 if self.inc_sk.uuid in self.sk_mapping:
                     self.sk_mapping[self.inc_sk.uuid]['frame'] += 1
 
-		#publish the gaze request of person on every detection:
+		        #publish the gaze request of person on every detection:
                 if self.inc_sk.joints[0].name == 'head':
                     head = Header(frame_id='head_xtion_depth_optical_frame')
                     look_at_pose = PoseStamped(header = head, pose=self.inc_sk.joints[0].pose)
                     self.publish_consent_pose.publish(look_at_pose)
 
-		# all this should happen given a good number of detections:
+		        # all this should happen given a good number of detections:
                 if self.sk_mapping[self.inc_sk.uuid]['frame'] == self.after_a_number_of_frames and self.request_sent_flag == 0:
-                    print "storing the 10th image to mongo..."
+                    print "storing the %sth image to mongo for the webserver..." % self.after_a_number_of_frames
                     # Skeleton on white background
                     query = {"_meta.image_type": "white_sk_image"}
                     white_sk_to_mongo =  self.msg_store.update(message=self.white_sk_msg, meta={'image_type':"white_sk_image"}, message_query=query, upsert=True)
@@ -200,41 +200,42 @@ class SkeletonImageLogger(object):
                     depth_img_to_mongo = self.msg_store.update(message=self.depth_msg, meta={'image_type':"depth_image"}, message_query=query, upsert=True)
 
                     consent_msg = "Check_consent_%s" % (t)
-                    print consent_msg	
+                    print consent_msg
                     self.publish_consent_req.publish(consent_msg)
-		    self.request_sent_flag = 1
+		            self.request_sent_flag = 1
                     self.gazeClient.send_goal(self.gazegoal)
 
-		    # move and speak:
-		    try:
+        		    # move and speak: (if no target, go to original waypoint)
+        		    try:
                         self.navgoal.target = self.config[waypoint]['target']
                     except:
-			self.navgoal.target = waypoint
-	            self.previous_target = self.navgoal.target
-		    self.navClient.send_goal(self.navgoal)
-		    result = self.navClient.wait_for_result()
-		    if not result:
-			self.go_back_to_where_I_came_from()
+			            self.navgoal.target = waypoint
+        		    self.navClient.send_goal(self.navgoal)
+        		    result = self.navClient.wait_for_result()
+                    self.previous_target = self.navgoal.target  #to return to after consent
+        		    if not result:
+        			    self.go_back_to_where_I_came_from()
 
-		    if self.request_sent_flag:
+        		    if self.request_sent_flag:
                         self.speaker.send_goal(maryttsGoal(text=self.speech))
 
-		    # Eyes!
-	#if self.request_sent_flag = 0:
+		    # Move Eyes?
+	        #if self.request_sent_flag = 0:
+
         return self.consent_ret
 
     def go_back_to_where_I_came_from(self):
-	self.navgoal.target = self.config[self.previous_target]['target']
-	self.navClient.send_goal(self.navgoal)
+    	self.navgoal.target = self.config[self.previous_target]['target']
+    	self.navClient.send_goal(self.navgoal)
         self.navClient.wait_for_result()
 
     def consent_ret_callback(self, msg):
         self.consent_ret=msg
-	self.request_sent_flag = 0
-	self.speaker.send_goal(maryttsGoal(text="Thanks"))
-	# when the request is returned, go back to previous waypoint
-	self.go_back_to_where_I_came_from()
-	del_srv = rospy.ServiceProxy("/delete_images_service", DeleteImages)
+    	self.request_sent_flag = 0
+    	self.speaker.send_goal(maryttsGoal(text="Thanks"))
+    	# when the request is returned, go back to previous waypoint
+    	self.go_back_to_where_I_came_from()
+    	del_srv = rospy.ServiceProxy("/delete_images_service", DeleteImages)
         result = del_srv()
         print result
 
@@ -247,13 +248,13 @@ class SkeletonImageLogger(object):
         self.gazegoal.runtime_sec = 30
 
     def nav_client(self):
-	rospy.loginfo("Creating nav client")
-	self.navClient = actionlib.SimpleActionClient('topological_navigation', topological_navigation.msg.GotoNodeAction)
-	self.navClient.wait_for_server()
-	self.navgoal = topological_navigation.msg.GotoNodeGoal()
+    	rospy.loginfo("Creating nav client")
+    	self.navClient = actionlib.SimpleActionClient('topological_navigation', topological_navigation.msg.GotoNodeAction)
+    	self.navClient.wait_for_server()
+    	self.navgoal = topological_navigation.msg.GotoNodeGoal()
 
     def speak(self):
-	self.speaker = actionlib.SimpleActionClient('/speak', maryttsAction)
+	    self.speaker = actionlib.SimpleActionClient('/speak', maryttsAction)
         got_server = self.speaker.wait_for_server(rospy.Duration(1))
         while not got_server:
             rospy.loginfo("Data Consent is waiting for marytts action...")
@@ -303,12 +304,4 @@ if __name__ == '__main__':
 
     sk_images = SkeletonImageLogger()
     while not rospy.is_shutdown():
-        # if str(datetime.datetime.now().date()) != sk_manager.date:
-        #     print 'new day!'
-        #     sk_manager.date = str(datetime.datetime.now().date())
-        #     sk_manager.dir1 = '/home/lucie02/Datasets/Lucie/'+sk_manager.date+'/'
-        #     print 'checking if folder exists:',sk_manager.dir1
-        #     if not os.path.exists(sk_manager.dir1):
-        #         print '  -create folder:',sk_manager.dir1
-        #         os.makedirs(sk_manager.dir1)
         pass
