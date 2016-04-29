@@ -42,6 +42,7 @@ class skeleton_server(object):
         duration = goal.duration
         start = rospy.Time.now()
         end = rospy.Time.now()
+        self.publish_rec.publish("started_rec_callback")
         while (end - start).secs < duration.secs:
             if self._as.is_preempt_requested():
                 self.reset_ptu()
@@ -52,7 +53,6 @@ class skeleton_server(object):
             if self.skeleton_msg.uuid != "":
                 self.image_logger.callback(self.skeleton_msg, goal.waypoint)
                 print "c", self.image_logger.consent_ret
-
             if self.image_logger.consent_ret != None:
                 break
             end = rospy.Time.now()

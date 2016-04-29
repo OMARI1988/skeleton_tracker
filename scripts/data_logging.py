@@ -212,9 +212,12 @@ class SkeletonImageLogger(object):
                         self.navgoal.target = self.config[waypoint]['target']
                     except:
                         self.navgoal.target = waypoint
+                    self.nav_goal_waypoint = self.navgoal.target  #to return to after consent
+                    print "PT", self.nav_goal_waypoint
+
                     self.navClient.send_goal(self.navgoal)
                     result = self.navClient.wait_for_result()
-                    self.previous_target = self.navgoal.target  #to return to after consent
+
                     if not result:
                         self.go_back_to_where_I_came_from()
 
@@ -226,12 +229,15 @@ class SkeletonImageLogger(object):
         return self.consent_ret
 
     def go_back_to_where_I_came_from(self):
-        self.navgoal.target = self.config[self.previous_target]['target']
-        print "no target waypoint - staying at %s" % self.navgoal.target
+        try:
+            self.navgoal.target = self.config[self.nav_goal_waypoint]['target']
+        except:
+            print "nav goal not set - staying at %s" % self.navgoal.target
         self.navClient.send_goal(self.navgoal)
         self.navClient.wait_for_result()
 
     def consent_ret_callback(self, msg):
+        if self.request_sent_flag == 0: return
         self.consent_ret=msg
         self.request_sent_flag = 0
         self.speaker.send_goal(maryttsGoal(text="Thanks"))
