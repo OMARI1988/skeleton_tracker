@@ -9,6 +9,7 @@ from scitos_ptu.msg import *
 from skeleton_publisher import SkeletonManager
 from data_logging import SkeletonImageLogger
 from skeleton_tracker.msg import skeletonAction, skeletonActionResult, skeleton_message
+from skeleton_tracker.srv import *
 
 class skeleton_server(object):
     def __init__(self):
@@ -19,7 +20,7 @@ class skeleton_server(object):
         self._as = actionlib.SimpleActionServer("skeleton_action", skeletonAction, \
                                                     execute_cb=self.execute_cb, auto_start=False)
         self._as.start()
-        self.sk_manager = SkeletonManager()
+        self.sk_publisher = SkeletonManager()
         self.image_logger = SkeletonImageLogger()
         self.skeleton_msg = skeleton_message()  #default empty
         self.filepath = os.path.join(roslib.packages.get_pkg_dir("skeleton_tracker"), "config")
@@ -42,24 +43,49 @@ class skeleton_server(object):
         duration = goal.duration
         start = rospy.Time.now()
         end = rospy.Time.now()
-        self.publish_rec.publish("started_rec_callback")
+        self.publish_rec.publish("started_rec_callback")   #the cb for this shows the recording webpage
+        self.set_ptu_state(goal.waypoint)
+        
         while (end - start).secs < duration.secs:
             if self._as.is_preempt_requested():
-                self.reset_ptu()
+                self.reset_all()
                 return self._as.set_preempted()
-            self.set_ptu_state(goal.waypoint)
-            self.sk_manager.publish_skeleton()
+
+            self.sk_publisher.publish_skeleton()
             rospy.sleep(0.01)  # wait until something is published
+            
+            #when a skeleton incremental msg is received
             if self.skeleton_msg.uuid != "":
+                prev_uuid = self.skeleton_msg.uuid
                 self.image_logger.callback(self.skeleton_msg, goal.waypoint)
-                print "c", self.image_logger.consent_ret
-            if self.image_logger.consent_ret != None:
+                #print "consent: ", self.image_logger.consent_ret
+
+            if self.image_logger.request_sent_flag == 1:
+                self.reset_ptu()
+            	
+            if self.image_logger.consent_ret != None:  #if consent is given:
                 break
             end = rospy.Time.now()
-        self.reset_ptu()
+            
+        # after the action reset everything
+        self.reset_all()
+        
+        previous_consent = self.image_logger.consent_ret.data
         self.image_logger.consent_ret = None
         self._as.set_succeeded(skeletonActionResult())
-
+        
+        proxy = rospy.ServiceProxy("/delete_images_service", DeleteImages)
+        req = DeleteImagesRequest(str(end), prev_uuid, str(previous_consent))
+        ret = proxy(req)
+        
+        #except ServiceException:
+        #    print "is deleting server running?"
+	
+		
+    def reset_all(self):
+        self.reset_ptu()
+        self.image_logger.go_back_to_where_I_came_from()
+   
 
     def incremental_callback(self, msg):
         self.skeleton_msg = msg

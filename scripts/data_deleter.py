@@ -2,67 +2,60 @@
 import roslib
 import rospy
 import sys, os
-import datetime
-import getpass
+import getpass, datetime
+import shutil
 from std_msgs.msg import String
 from mongodb_store.message_store import MessageStoreProxy
 import sensor_msgs.msg
 from skeleton_tracker.srv import *
 
-"""
-class ImageDeleter(object):
-
-    def __init__(self, database='message_store', collection='people_skeleton'):
-
-        # directory to delete the data from
-        self.date = str(datetime.datetime.now().date())
-        self.dir1 = '/home/' + getpass.getuser() + '/SkeletonDataset/'+self.date+'/'
-
-        self.time_now = datetime.datetime.now()
-        self.del_window_start = (self.time_now - datetime.timedelta(hours=1)).time()
-        self.del_window_end = (self.time_now - datetime.timedelta(hours=0.5)).time()
-
-        print 'folder', self.dir1
-        print 'date', self.date
-        print 'time', self.time_now
-        print 'del ', self.del_window_start,  self.del_window_end
-
-        self.consent_req = None
-        self.consent_ret = None
-
-        # mongo store
-        self.msg_store = MessageStoreProxy(collection=collection, database=database)
-        self.publish_consent_req = rospy.Publisher('skeleton_data/consent', String, queue_size = 10)
-
-        # listeners
-        rospy.Subscriber("/skeleton_data/consent_req", String, callback=self.consent_req_callback, queue_size=10)
-        rospy.Subscriber('skeleton_data/consent_ret', String, callback=self.consent_ret_callback, queue_size = 10)
-
-        self.remover_of_images()
-
-
-    def remover_of_images(self):
-        print "removing..."
-        print 'del ', self.del_window_start,  self.del_window_end
-
-
-    def consent_req_callback(self, msg):
-        self.consent_req = msg
-
-
-    def consent_ret_callback(self, msg):
-        self.consent_ret = msg
-        if self.consent_ret == "everything":
-            rospy.sleep(10.*60)
-        elif self.consent_ret == "nothing":
-"""
-
-
 def remover_of_images(req):
-    start_time = req.time
+    time = req.time
     uuid = req.uuid
     consent = req.consent
-    print "removing: ", start_time, consent
+    
+    date =  str(datetime.datetime.now().date())
+    dataset = '/home/' + getpass.getuser() +'/SkeletonDataset/pre_consent/'
+    dataset_path = os.path.join(dataset, date)
+
+    dataset_consented_path = os.path.join('/home', getpass.getuser(), 'SkeletonDataset/SafeZone')
+    if not os.path.exists(dataset_consented_path):
+        os.makedirs(dataset_consented_path)
+    print "\nuuid: %s, consent: %s" % (uuid, consent)
+
+    # find the specific recording to keep (either most images or most recent)
+    for d in os.listdir(dataset_path):
+        if uuid in d:
+            specific_recording = d
+    print "keep this one:", specific_recording
+    location = os.path.join(dataset_path, specific_recording)
+
+    # if consent == "nothing":
+    #     shutil.rmtree(os.path.join(location, 'rgb'))
+    #     shutil.rmtree(os.path.join(location, 'rgb_skel'))
+    #     shutil.rmtree(os.path.join(location, 'depth'))
+    #     shutil.rmtree(os.path.join(location, 'skel'))
+    #     shutil.rmtree(os.path.join(location, 'robot'))
+       
+    if consent == "depthskel":
+        print "--remove rgb"
+        shutil.rmtree(os.path.join(location, 'rgb'))
+        shutil.rmtree(os.path.join(location, 'rgb_sk'))
+
+    elif consent == "skel":
+        print "--remove rgb and depth"
+        shutil.rmtree(os.path.join(location, 'rgb'))
+        shutil.rmtree(os.path.join(location, 'rgb_sk'))
+        shutil.rmtree(os.path.join(location, 'depth'))
+
+    if "nothing" not in consent:
+        print "moving files..."
+        new_location = os.path.join(dataset_consented_path, specific_recording)
+        os.rename(location, new_location)
+
+    # remove everything in the dataset that is not "Safe"
+    rospy.sleep(5.0)
+    shutil.rmtree(dataset_path)
 
     return DeleteImagesResponse(True)
 
