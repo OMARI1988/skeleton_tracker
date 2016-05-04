@@ -1,9 +1,9 @@
 TSC bringup - activities
 ===============
 
-To start the activities recording action server run:
+To start the skeleton activity recording action server run:
 ```
-roslaunch tsc_bringup activity_recordings.launch
+roslaunch skeleton_tracker tracker.launch camera:=head_xtion delete_service:=True
 ```
 
 To trigger an action run:

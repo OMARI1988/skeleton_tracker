@@ -8,6 +8,7 @@ import sys, os
 import cv2
 import yaml
 import rosbag
+import numpy as np
 from std_msgs.msg import Header, String
 from geometry_msgs.msg import PoseStamped, Pose, Point, Quaternion
 # from strands_navigation_msgs.msg import TopologicalMap
@@ -342,11 +343,12 @@ class SkeletonImageLogger(object):
         self.white_sk_msg = msg1
 
     def depth_callback(self, imgmsg):
-        self.depth_msg = imgmsg
-        self.xtion_img_d = self.cv_bridge.imgmsg_to_cv2(imgmsg, desired_encoding="passthrough")
-        self.xtion_img_d.setflags(write=True) # allow to change the values
-        fgmask = cv2.convertScaleAbs(self.xtion_img_d) # cv2 stuff
-        self.xtion_img_d_rgb = cv2.cvtColor(fgmask, cv2.COLOR_GRAY2BGR) # cv2 stuff
+    
+        self.depth_msg = imgmsg                                                    
+        depth_image = self.cv_bridge.imgmsg_to_cv2(imgmsg, '32FC1')
+        depth_array = np.array(depth_image, dtype=np.float32)
+        cv2.normalize(depth_array, depth_array, 0, 1, cv2.NORM_MINMAX)
+        self.xtion_img_d_rgb = depth_array
         if self._flag_depth == 0:
             print 'depth recived'
             self._flag_depth = 1
