@@ -41,7 +41,7 @@ def remover_of_images(req):
         print "--remove rgb"
         shutil.rmtree(os.path.join(location, 'rgb'))
         shutil.rmtree(os.path.join(location, 'rgb_sk'))
-		os.remove(os.path.join(location, 'detection.bag'))
+        os.remove(os.path.join(location, 'detection.bag'))
 		
     elif consent == "skel":
         print "--remove rgb and depth"

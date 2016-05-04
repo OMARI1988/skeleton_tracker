@@ -29,7 +29,7 @@
   <group if="$(arg delete_service)">
     <node pkg="skeleton_tracker" type="data_deleter.py" name="data_deleter" output="screen">
     </node>
-
+  </group>
 
   <group if="$(arg pub_skeleton)">
     <!-- Transforms /tf to /skeleton_data if requested -->
