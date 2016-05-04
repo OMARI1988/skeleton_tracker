@@ -4,6 +4,7 @@ import sys, os
 import rospy
 import yaml
 import actionlib
+import rosbag
 from std_msgs.msg import String
 from scitos_ptu.msg import *
 from skeleton_publisher import SkeletonManager
@@ -21,7 +22,7 @@ class skeleton_server(object):
                                                     execute_cb=self.execute_cb, auto_start=False)
         self._as.start()
         self.sk_publisher = SkeletonManager()
-        self.image_logger = SkeletonImageLogger()
+        self.image_logger = SkeletonImageLogger(detection_threshold = 100)
         self.skeleton_msg = skeleton_message()  #default empty
         self.filepath = os.path.join(roslib.packages.get_pkg_dir("skeleton_tracker"), "config")
         try:
@@ -45,7 +46,7 @@ class skeleton_server(object):
         end = rospy.Time.now()
         self.publish_rec.publish("started_rec_callback")   #the cb for this shows the recording webpage
         self.set_ptu_state(goal.waypoint)
-        
+ 
         while (end - start).secs < duration.secs:
             if self._as.is_preempt_requested():
                 self.reset_all()
@@ -57,20 +58,28 @@ class skeleton_server(object):
             #when a skeleton incremental msg is received
             if self.skeleton_msg.uuid != "":
                 prev_uuid = self.skeleton_msg.uuid
-                self.image_logger.callback(self.skeleton_msg, goal.waypoint)
-                #print "consent: ", self.image_logger.consent_ret
+                self.sk_publisher.logged_uuid = prev_uuid
+                
+                if self.image_logger.request_sent_flag != 1:
+                    self.image_logger.callback(self.skeleton_msg, goal.waypoint)
+                    #print "consent: ", self.image_logger.consent_ret
 
             if self.image_logger.request_sent_flag == 1:
                 self.reset_ptu()
-            	
+
             if self.image_logger.consent_ret != None:  #if consent is given:
                 break
             end = rospy.Time.now()
-            
+
         # after the action reset everything
         self.reset_all()
-        
-        previous_consent = self.image_logger.consent_ret.data
+        self.image_logger.bag_file.close()
+
+        try: 
+            previous_consent = self.image_logger.consent_ret.data
+        except AttributeError:  # if nothinging is returned :(
+            previous_consent = "everything"
+
         self.image_logger.consent_ret = None
         self._as.set_succeeded(skeletonActionResult())
         

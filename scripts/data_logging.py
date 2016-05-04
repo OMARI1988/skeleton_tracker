@@ -7,6 +7,7 @@ import tf
 import sys, os
 import cv2
 import yaml
+import rosbag
 from std_msgs.msg import Header, String
 from geometry_msgs.msg import PoseStamped, Pose, Point, Quaternion
 # from strands_navigation_msgs.msg import TopologicalMap
@@ -26,7 +27,7 @@ class SkeletonImageLogger(object):
        Also needs to request consent from the person who was stored, before keeping it.
     """
 
-    def __init__(self, camera='head_xtion', database='message_store', collection='consent_images'):
+    def __init__(self, detection_threshold = 1000, camera='head_xtion', database='message_store', collection='consent_images'):
     
         self.camera = camera
         self.baseFrame = '/'+self.camera+'_depth_optical_frame'
@@ -63,7 +64,7 @@ class SkeletonImageLogger(object):
         self._flag_rgb_sk = 0
         self._flag_depth = 0
         self.request_sent_flag = 0
-        self.after_a_number_of_frames = 200
+        self.after_a_number_of_frames = detection_threshold
         self.consent_ret = None
 
         # opencv stuff
@@ -109,6 +110,7 @@ class SkeletonImageLogger(object):
             print 'robot pose recived'
             self._flag_robot = 1
 
+
     def callback(self, msg, waypoint):
         self.inc_sk = msg
         if str(datetime.datetime.now().date()) != self.date:
@@ -126,8 +128,8 @@ class SkeletonImageLogger(object):
                 self.sk_mapping[self.inc_sk.uuid]['frame'] = 1
                 self.sk_mapping[self.inc_sk.uuid]['time'] = str(datetime.datetime.now().time()).split('.')[0]+'_'
                 t = self.sk_mapping[self.inc_sk.uuid]['time']
-                print '  -new skeleton detected with id:',self.inc_sk.uuid
-                print '  -creating folder:',t+self.inc_sk.uuid
+                print '  -new skeleton detected with id:', self.inc_sk.uuid
+                # print '  -creating folder:',t+self.inc_sk.uuid
                 if not os.path.exists(self.dir1+t+self.inc_sk.uuid):
                     os.makedirs(self.dir1+t+self.inc_sk.uuid)
                     os.makedirs(self.dir1+t+self.inc_sk.uuid+'/rgb')
@@ -135,6 +137,9 @@ class SkeletonImageLogger(object):
                     os.makedirs(self.dir1+t+self.inc_sk.uuid+'/rgb_sk')
                     os.makedirs(self.dir1+t+self.inc_sk.uuid+'/robot')
                     os.makedirs(self.dir1+t+self.inc_sk.uuid+'/skeleton')
+                    
+                    # create the empty bag file (closed in /skeleton_action)
+                    self.bag_file = rosbag.Bag(self.dir1+t+self.inc_sk.uuid+'/detection.bag', 'w')
 
             t = self.sk_mapping[self.inc_sk.uuid]['time']
             if os.path.exists(self.dir1+t+self.inc_sk.uuid):
@@ -149,24 +154,55 @@ class SkeletonImageLogger(object):
 
                 # save rgb image
                 # todo: make these rosbags sometime in the future
-                cv2.imwrite(d+'rgb/rgb_'+f_str+'.jpg',self.rgb)
-                cv2.imwrite(d+'depth/depth_'+f_str+'.jpg',self.xtion_img_d_rgb)
-                cv2.imwrite(d+'rgb_sk/sk_'+f_str+'.jpg',self.rgb_sk)
+                cv2.imwrite(d+'rgb/rgb_'+f_str+'.jpg', self.rgb)
+                cv2.imwrite(d+'depth/depth_'+f_str+'.jpg', self.xtion_img_d_rgb)
+                cv2.imwrite(d+'rgb_sk/sk_'+f_str+'.jpg', self.rgb_sk)
 
-                # save robot_pose
+                self.bag_file.write('rgb', self.rgb_msg)
+                self.bag_file.write('depth', self.depth_msg)
+                self.bag_file.write('rgb_sk', self.rgb_sk_msg)	
+               
+                # save robot_pose in bag file
+                x=float(self.robot_pose.position.x)
+                y=float(self.robot_pose.position.y)
+                z=float(self.robot_pose.position.z)
+                xo=float(self.robot_pose.orientation.x)
+                yo=float(self.robot_pose.orientation.y)
+                zo=float(self.robot_pose.orientation.z)
+                wo=float(self.robot_pose.orientation.w)
+                p = Point(x, y, z)
+                q = Quaternion(xo, yo, zo, wo)
+                robot = Pose(p,q)
+                self.bag_file.write('robot', robot)
+				
+                # save robot_pose in text file
                 f1 = open(d+'robot/robot_'+f_str+'.txt','w')
                 f1.write('position\n')
-                f1.write('x:'+str(self.robot_pose.position.x)+'\n')
-                f1.write('y:'+str(self.robot_pose.position.y)+'\n')
-                f1.write('z:'+str(self.robot_pose.position.z)+'\n')
+                f1.write('x:'+str(x)+'\n')
+                f1.write('y:'+str(y)+'\n')
+                f1.write('z:'+str(z)+'\n')
                 f1.write('orientation\n')
-                f1.write('x:'+str(self.robot_pose.orientation.x)+'\n')
-                f1.write('y:'+str(self.robot_pose.orientation.y)+'\n')
-                f1.write('z:'+str(self.robot_pose.orientation.z)+'\n')
-                f1.write('w:'+str(self.robot_pose.orientation.w)+'\n')
+                f1.write('x:'+str(xo)+'\n')
+                f1.write('y:'+str(yo)+'\n')
+                f1.write('z:'+str(zo)+'\n')
+                f1.write('w:'+str(wo)+'\n')
                 f1.close()
 
-                # save skeleton data
+                # save skeleton data in bag file
+                #x=float(self.robot_pose.position.x)
+                #y=float(self.robot_pose.position.y)
+                #z=float(self.robot_pose.position.z)
+                #xo=float(self.robot_pose.orientation.x)
+                #yo=float(self.robot_pose.orientation.y)
+                #zo=float(self.robot_pose.orientation.z)
+                #wo=float(self.robot_pose.orientation.w)
+                #p = Point(x, y, z)
+                #q = Quaternion(xo, yo, zo, wo)
+                #skel = Pose(p,q)
+                #bag.write('skeleton', skel)
+
+
+                # save skeleton datain text file
                 f1 = open(d+'skeleton/skl_'+f_str+'.txt','w')
                 # print self.inc_sk.joints[0]
                 f1.write('time:'+str(self.inc_sk.joints[0].time.secs)+'.'+str(self.inc_sk.joints[0].time.nsecs)+'\n')
@@ -282,7 +318,7 @@ class SkeletonImageLogger(object):
         self.speech = "Please may I get your consent to store data I just recorded."
 
     def complete_callback(self, msg):
-        print '  -stopped logging user:', msg.uuid
+        # print '  -stopped logging user:', msg.uuid	
         self.sk_mapping.pop(msg.uuid, None)
         # self.robot_pose = msg
 
@@ -319,6 +355,6 @@ class SkeletonImageLogger(object):
 if __name__ == '__main__':
     rospy.init_node('skeleton_image_logger', anonymous=True)
 
-    sk_images = SkeletonImageLogger()
+    sk_images = SkeletonImageLogger(detection_threshold = 100)
     while not rospy.is_shutdown():
         pass

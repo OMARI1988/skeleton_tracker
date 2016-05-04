@@ -54,8 +54,8 @@ def remover_of_images(req):
         os.rename(location, new_location)
 
     # remove everything in the dataset that is not "Safe"
-    rospy.sleep(5.0)
-    shutil.rmtree(dataset_path)
+    #rospy.sleep(5.0)
+    #shutil.rmtree(dataset_path)
 
     return DeleteImagesResponse(True)
 
