@@ -83,12 +83,12 @@ class skeleton_server(object):
         self.image_logger.consent_ret = None
         self._as.set_succeeded(skeletonActionResult())
         
-        proxy = rospy.ServiceProxy("/delete_images_service", DeleteImages)
-        req = DeleteImagesRequest(str(end), prev_uuid, str(previous_consent))
-        ret = proxy(req)
-        
-        #except ServiceException:
-        #    print "is deleting server running?"
+        try:
+            proxy = rospy.ServiceProxy("/delete_images_service", DeleteImages)
+            req = DeleteImagesRequest(str(end), prev_uuid, str(previous_consent))
+            ret = proxy(req)
+        except ServiceException:
+            print "deleter service is not running. Cannot delete data."
 	
 		
     def reset_all(self):
