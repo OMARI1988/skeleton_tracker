@@ -41,12 +41,14 @@ def remover_of_images(req):
         print "--remove rgb"
         shutil.rmtree(os.path.join(location, 'rgb'))
         shutil.rmtree(os.path.join(location, 'rgb_sk'))
-
+		os.remove(os.path.join(location, 'detection.bag'))
+		
     elif consent == "skel":
         print "--remove rgb and depth"
         shutil.rmtree(os.path.join(location, 'rgb'))
         shutil.rmtree(os.path.join(location, 'rgb_sk'))
         shutil.rmtree(os.path.join(location, 'depth'))
+        os.remove(os.path.join(location, 'detection.bag'))
 
     if "nothing" not in consent:
         print "moving files..."
@@ -54,8 +56,8 @@ def remover_of_images(req):
         os.rename(location, new_location)
 
     # remove everything in the dataset that is not "Safe"
-    #rospy.sleep(5.0)
-    #shutil.rmtree(dataset_path)
+    rospy.sleep(5.0)
+    shutil.rmtree(dataset_path)
 
     return DeleteImagesResponse(True)
 
@@ -71,5 +73,4 @@ def execute():
 if __name__ == '__main__':
     rospy.init_node('skeleton_image_logger', anonymous=True)
     execute()
-    # deleter = ImageDeleter()
-    # deleter.remover_of_images()
+

@@ -101,7 +101,6 @@ class SkeletonManager(object):
                 self._publish_complete_data(subj, self.logged_uuid) #logged_uuid from skeleton logger
                 self.data[subj]['flag'] = 0
 
-
         #For all subjects, publish the incremental skeleton and accumulate into self.data also.
         list_of_subs = [subj for subj in self.data if self.data[subj]['flag'] == 1]
 

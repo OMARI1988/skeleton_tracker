@@ -7,6 +7,7 @@
   <arg name="rgb_frame_id"   default="$(arg camera)_depth_optical_frame" />
   <arg name="depth_frame_id" default="$(arg camera)_depth_optical_frame" />
   <arg name="pub_skeleton" default="True"/>
+  <arg name="delete_service" default="True"/>
   <arg name="stand_alone" default="False"/>
   <arg name="log_skeleton" default="False"/>
   <arg name="message_store" default="people_skeleton"/>
@@ -25,9 +26,9 @@
    	<param name="dataset_path" type="string" value="/$(arg dataset_path)"/>
   </node>
 
-
-  <node pkg="skeleton_tracker" type="data_deleter.py" name="data_deleter" output="screen">
-  </node>
+  <group if="$(arg delete_service)">
+    <node pkg="skeleton_tracker" type="data_deleter.py" name="data_deleter" output="screen">
+    </node>
 
 
   <group if="$(arg pub_skeleton)">
