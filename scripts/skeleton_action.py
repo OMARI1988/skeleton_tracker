@@ -5,6 +5,8 @@ import rospy
 import yaml
 import actionlib
 import rosbag
+import getpass, datetime
+import shutil
 from std_msgs.msg import String
 from scitos_ptu.msg import *
 from skeleton_publisher import SkeletonManager
