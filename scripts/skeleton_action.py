@@ -27,7 +27,7 @@ class skeleton_server(object):
         self.filepath = os.path.join(roslib.packages.get_pkg_dir("skeleton_tracker"), "config")
         try:
             self.config = yaml.load(open(os.path.join(self.filepath, 'config.ini'), 'r'))
-            # print "config loaded:", self.config
+            print "config loaded:", self.config
         except:
             print "no config file found"
 
@@ -73,7 +73,11 @@ class skeleton_server(object):
 
         # after the action reset everything
         self.reset_all()
-        self.image_logger.bag_file.close()
+        
+        try:
+            self.image_logger.bag_file.close()
+        except AttributeError:
+            print "no bag file to close"
 
         try: 
             previous_consent = self.image_logger.consent_ret.data
@@ -87,10 +91,29 @@ class skeleton_server(object):
             proxy = rospy.ServiceProxy("/delete_images_service", DeleteImages)
             req = DeleteImagesRequest(str(end), prev_uuid, str(previous_consent))
             ret = proxy(req)
-        except ServiceException:
+        except rospy.ServiceException:
             print "deleter service is not running. Cannot delete data."
-	
-		
+            self.move_consented_data(prev_uuid, previous_consent)
+
+
+    def move_consented_data(self, uuid, consent):
+        """Even if deleter is not running, move consented data"""
+        dataset = '/home/' + getpass.getuser() +'/SkeletonDataset/pre_consent/'
+        dataset_path = os.path.join(dataset, str(datetime.datetime.now().date()))
+        dataset_consented_path = os.path.join('/home', getpass.getuser(), 'SkeletonDataset/SafeZone')
+        if not os.path.exists(dataset_consented_path):
+            os.makedirs(dataset_consented_path)
+
+        # find the specific recording to keep (either most images or most recent)
+        for d in os.listdir(dataset_path):
+           if uuid in d: specific_recording = d
+        location = os.path.join(dataset_path, specific_recording)
+        
+        if "nothing" not in consent:
+            new_location = os.path.join(dataset_consented_path, specific_recording)
+            os.rename(location, new_location)
+
+        
     def reset_all(self):
         self.reset_ptu()
         self.image_logger.go_back_to_where_I_came_from()
