@@ -345,8 +345,7 @@ class SkeletonImageLogger(object):
     def depth_callback(self, imgmsg):
     
         self.depth_msg = imgmsg
-        
-        depth_image = self.bridge.imgmsg_to_cv2(imgmsg, desired_encoding="passthrough")
+        depth_image = self.cv_bridge.imgmsg_to_cv2(imgmsg, desired_encoding="passthrough")
         depth_array = np.array(depth_image, dtype=np.float32)
         cv2.normalize(depth_array, depth_array, 0, 1, cv2.NORM_MINMAX)
         self.xtion_img_d_rgb = depth_array*255

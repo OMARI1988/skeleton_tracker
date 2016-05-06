@@ -108,12 +108,11 @@ class skeleton_server(object):
 
         # find the specific recording to keep (either most images or most recent)
         for d in os.listdir(dataset_path):
-           if uuid in d: specific_recording = d
-        location = os.path.join(dataset_path, specific_recording)
-        
-        if "nothing" not in consent:
-            new_location = os.path.join(dataset_consented_path, specific_recording)
-            os.rename(location, new_location)
+            if uuid in d:
+                location = os.path.join(dataset_path, d)
+                if "nothing" not in consent:
+                    new_location = os.path.join(dataset_consented_path, d)
+                    os.rename(location, new_location)
 
         
     def reset_all(self):
