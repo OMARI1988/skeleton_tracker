@@ -29,6 +29,7 @@ class SkeletonImageLogger(object):
     """
 
     def __init__(self, detection_threshold = 1000, camera='head_xtion', database='message_store', collection='consent_images'):
+        self.stop = False
         self.nav_goal_waypoint = None
         self.camera = camera
         self.baseFrame = '/'+self.camera+'_depth_optical_frame'
@@ -123,7 +124,7 @@ class SkeletonImageLogger(object):
                 print '  -create folder:',self.dir1
                 os.makedirs(self.dir1)
         # print self.inc_sk.uuid
-        if self._flag_robot and self._flag_rgb and self._flag_rgb_sk:
+        if self._flag_robot and self._flag_rgb and self._flag_rgb_sk and not self.stop:
             if self.inc_sk.uuid not in self.sk_mapping:
                 self.sk_mapping[self.inc_sk.uuid] = {}
                 self.sk_mapping[self.inc_sk.uuid]['frame'] = 1
@@ -269,8 +270,8 @@ class SkeletonImageLogger(object):
                     rospy.sleep(0.1)
                     if self.request_sent_flag:
                         self.speaker.send_goal(maryttsGoal(text=self.speech))
-                    while self.consent_ret is None:
-                        rospy.sleep(0.1)
+                while self.consent_ret is None and not self.stop:
+                    rospy.sleep(0.1)
 
                     # Move Eyes - look up and down to draw attension.
         return self.consent_ret
@@ -278,7 +279,8 @@ class SkeletonImageLogger(object):
     def go_back_to_where_I_came_from(self):
         if self.nav_goal_waypoint is not None and self.nav_goal_waypoint != self.config[self.nav_goal_waypoint]['target']:
             try:
-                self.navgoal.target = self.config[self.nav_goal_waypoint]['target']
+                # self.navgoal.target = self.config[self.nav_goal_waypoint]['target']
+                self.navgoal.target = self.nav_goal_waypoint
             except:
                 print "nav goal not set - staying at %s" % self.navgoal.target
             self.navClient.send_goal(self.navgoal)

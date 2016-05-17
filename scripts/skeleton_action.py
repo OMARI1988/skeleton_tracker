@@ -54,11 +54,12 @@ class skeleton_server(object):
         prev_uuid = ""
         thread = None
         while (end - start).secs < duration.secs:
+            if self._as.is_preempt_requested():
+                self.image_logger.stop = True
+                break
+                # self.reset_all()
+                # return self._as.set_preempted()
             if self.image_logger.request_sent_flag != 1:
-                if self._as.is_preempt_requested():
-                    self.reset_all()
-                    return self._as.set_preempted()
-
                 self.sk_publisher.publish_skeleton()
                 rospy.sleep(0.01)  # wait until something is published
 
@@ -81,8 +82,8 @@ class skeleton_server(object):
                 if self.image_logger.consent_ret != None:  #if consent is given:
                     print "got consent"
                     break
-                rospy.sleep(0.1)
             end = rospy.Time.now()
+            rospy.sleep(0.1)
 
         if thread is not None:
             thread.join()
@@ -95,6 +96,10 @@ class skeleton_server(object):
         except AttributeError:
             print "no bag file to close"
 
+        if self._as.is_preempt_requested():
+            self.image_logger.stop = False
+            print "The action is being preempted, cancelling everything."
+            return self._as.set_preempted()
         try:
             previous_consent = self.image_logger.consent_ret.data
         except AttributeError:  # if nothinging is returned :(
