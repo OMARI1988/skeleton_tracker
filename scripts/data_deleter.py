@@ -13,7 +13,7 @@ def remover_of_images(req):
     time = req.time
     uuid = req.uuid
     consent = req.consent
-    
+
     date =  str(datetime.datetime.now().date())
     dataset = '/home/' + getpass.getuser() +'/SkeletonDataset/pre_consent/'
     dataset_path = os.path.join(dataset, date)
@@ -24,37 +24,41 @@ def remover_of_images(req):
     print "\nuuid: %s, consent: %s" % (uuid, consent)
 
     # find the specific recording to keep (either most images or most recent)
-    for d in os.listdir(dataset_path):
-        if uuid in d:
-            specific_recording = d
-    print "keep this one:", specific_recording
-    location = os.path.join(dataset_path, specific_recording)
+    try:
+        for d in os.listdir(dataset_path):
+            if uuid in d:
+                specific_recording = d
 
-    # if consent == "nothing":
-    #     shutil.rmtree(os.path.join(location, 'rgb'))
-    #     shutil.rmtree(os.path.join(location, 'rgb_skel'))
-    #     shutil.rmtree(os.path.join(location, 'depth'))
-    #     shutil.rmtree(os.path.join(location, 'skel'))
-    #     shutil.rmtree(os.path.join(location, 'robot'))
-       
-    if consent == "depthskel":
-        print "--remove rgb"
-        shutil.rmtree(os.path.join(location, 'rgb'))
-        shutil.rmtree(os.path.join(location, 'rgb_sk'))
-        os.remove(os.path.join(location, 'detection.bag'))
-		
-    elif consent == "skel":
-        print "--remove rgb and depth"
-        shutil.rmtree(os.path.join(location, 'rgb'))
-        shutil.rmtree(os.path.join(location, 'rgb_sk'))
-        shutil.rmtree(os.path.join(location, 'depth'))
-        os.remove(os.path.join(location, 'detection.bag'))
+        print "keep this one:", specific_recording
+        location = os.path.join(dataset_path, specific_recording)
 
-    if "nothing" not in consent:
-        print "moving files..."
-        new_location = os.path.join(dataset_consented_path, specific_recording)
-        os.rename(location, new_location)
+        # if consent == "nothing":
+        #     shutil.rmtree(os.path.join(location, 'rgb'))
+        #     shutil.rmtree(os.path.join(location, 'rgb_skel'))
+        #     shutil.rmtree(os.path.join(location, 'depth'))
+        #     shutil.rmtree(os.path.join(location, 'skel'))
+        #     shutil.rmtree(os.path.join(location, 'robot'))
 
+        if consent == "depthskel":
+            print "--remove rgb"
+            shutil.rmtree(os.path.join(location, 'rgb'))
+            shutil.rmtree(os.path.join(location, 'rgb_sk'))
+            os.remove(os.path.join(location, 'detection.bag'))
+
+        elif consent == "skel":
+            print "--remove rgb and depth"
+            shutil.rmtree(os.path.join(location, 'rgb'))
+            shutil.rmtree(os.path.join(location, 'rgb_sk'))
+            shutil.rmtree(os.path.join(location, 'depth'))
+            os.remove(os.path.join(location, 'detection.bag'))
+
+        if "nothing" not in consent:
+            print "moving files..."
+            new_location = os.path.join(dataset_consented_path, specific_recording)
+            os.rename(location, new_location)
+
+    except:
+        rospy.logerr("File(s) or directory(ies) can not be found!!!")
     # remove everything in the dataset that is not "Safe"
     rospy.sleep(5.0)
     shutil.rmtree(dataset_path)
