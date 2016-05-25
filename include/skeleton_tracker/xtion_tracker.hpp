@@ -507,7 +507,7 @@ private:
     {
       tf::Transform transform;
       transform.setOrigin(
-          tf::Vector3(j.getPosition().x / 1000.0, j.getPosition().y / 1000.0, j.getPosition().z / 1000.0));
+          tf::Vector3(j.getPosition().x / 1000.0, -j.getPosition().y / 1000.0, j.getPosition().z / 1000.0));
       transform.setRotation(tf::Quaternion(0, 0, 0, 1));
       std::stringstream frame_id_stream;
       std::string frame_id;
