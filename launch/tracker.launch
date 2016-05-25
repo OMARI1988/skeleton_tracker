@@ -9,9 +9,9 @@
   <arg name="message_store" default="people_skeleton"/>
 
   <node pkg="skeleton_tracker" type="xtion_tracker" name="skeleton_tracker" output="screen">
-  	<param name="camera" type="string" value="/$(arg camera)"/>
-  	<param name="rgb_frame" type="string" value="/$(arg rgb_frame_id)"/>
-  	<param name="depth_frame" type="string" value="/$(arg depth_frame_id)"/>
+    <param name="camera" type="string" value="$(arg camera)"/>
+    <param name="rgb_frame" type="string" value="$(arg rgb_frame_id)"/>
+    <param name="depth_frame" type="string" value="$(arg depth_frame_id)"/>
   </node>
 
   <group if="$(arg pub_skeleton)">
