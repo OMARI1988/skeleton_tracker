@@ -15,7 +15,7 @@
 
   <machine name="$(arg machine)" address="$(arg machine)" env-loader="$(optenv ROS_ENV_LOADER )" user="$(arg user)" default="true"/>
 
-  <node pkg="skeleton_tracker" type="xtion_tracker" name="skeleton_tracker" output="screen" respawn="true">
+  <node pkg="skeleton_tracker" type="xtion_tracker" name="skeleton_tracker" respawn="true">
   	<param name="camera" type="string" value="/$(arg camera)"/>
   	<param name="rgb_frame" type="string" value="/$(arg rgb_frame_id)"/>
   	<param name="depth_frame" type="string" value="/$(arg depth_frame_id)"/>
@@ -33,7 +33,7 @@
 
   <group if="$(arg pub_skeleton)">
     <!-- Transforms /tf to /skeleton_data if requested -->
-    <node pkg="skeleton_tracker" type="skeleton_publisher.py" name="skeleton_publisher" output="screen" respawn="true">
+    <node pkg="skeleton_tracker" type="skeleton_publisher.py" name="skeleton_publisher" output="screen" respawn="false">
           <param name="log_skeleton" value="$(arg log_skeleton)" type="bool"/>
           <param name="message_store" value="$(arg message_store)" type="string"/>
     </node>
