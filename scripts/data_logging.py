@@ -178,6 +178,7 @@ class SkeletonImageLogger(object):
                 p = Point(x, y, z)
                 q = Quaternion(xo, yo, zo, wo)
                 robot = Pose(p,q)
+
                 try:
                     self.bag_file.write('robot', robot)
                 except:

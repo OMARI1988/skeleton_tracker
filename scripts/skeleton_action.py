@@ -1,5 +1,4 @@
 #! /usr/bin/env python
-#import threading
 import roslib
 import sys, os
 import rospy
@@ -52,6 +51,7 @@ class skeleton_server(object):
         self.set_ptu_state(goal.waypoint)
 
         prev_uuid = ""
+
         #thread = None
         while (end - start).secs < duration.secs:
             if self._as.is_preempt_requested():
@@ -65,11 +65,13 @@ class skeleton_server(object):
 
                 #when a skeleton incremental msg is received
                 if self.skeleton_msg.uuid != "":
+
                     #print "tracking person: ", self.skeleton_msg.uuid 
                     prev_uuid = self.skeleton_msg.uuid
                     self.sk_publisher.logged_uuid = prev_uuid
 
                     if self.image_logger.request_sent_flag != 1:
+
                         #thread = threading.Thread(
                         #    target=self.image_logger.callback,
                         #    args=(self.skeleton_msg, goal.waypoint,)
@@ -88,6 +90,7 @@ class skeleton_server(object):
 
         #if thread is not None:
         #    thread.join()
+
         # after the action reset everything
         self.image_logger.request_sent_flag = 0
         self.reset_all()
@@ -115,6 +118,7 @@ class skeleton_server(object):
             if prev_uuid != "":
                 req = DeleteImagesRequest(str(end), prev_uuid, str(previous_consent))
                 #print "deleting images..."
+
                 proxy(req)
                 print "deleted..."
         except rospy.ServiceException:
