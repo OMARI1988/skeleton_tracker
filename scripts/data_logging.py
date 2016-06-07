@@ -29,7 +29,7 @@ class SkeletonImageLogger(object):
     """
 
     def __init__(self, detection_threshold = 1000, camera='head_xtion', database='message_store', collection='consent_images'):
-        self.stop = False
+        #self.stop = False
         self.nav_goal_waypoint = None
         self.camera = camera
         self.baseFrame = '/'+self.camera+'_depth_optical_frame'
@@ -68,6 +68,7 @@ class SkeletonImageLogger(object):
         self.request_sent_flag = 0
         self.after_a_number_of_frames = detection_threshold
         self.consent_ret = None
+        self.stop_image_callbacks = 1
 
         # opencv stuff
         self.cv_bridge = CvBridge()
@@ -124,7 +125,7 @@ class SkeletonImageLogger(object):
                 print '  -create folder:',self.dir1
                 os.makedirs(self.dir1)
         # print self.inc_sk.uuid
-        if self._flag_robot and self._flag_rgb and self._flag_rgb_sk and not self.stop:
+        if self._flag_robot and self._flag_rgb and self._flag_rgb_sk and not self.stop_image_callbacks:
             if self.inc_sk.uuid not in self.sk_mapping:
                 self.sk_mapping[self.inc_sk.uuid] = {}
                 self.sk_mapping[self.inc_sk.uuid]['frame'] = 1
@@ -240,8 +241,10 @@ class SkeletonImageLogger(object):
                 #self.gazeClient.send_goal(self.gazegoal)
 
                 # all this should happen given a good number of detections:
-                print "%s out of %d frames are obtained" % (self.sk_mapping[self.inc_sk.uuid]['frame']-1, self.after_a_number_of_frames)
-                if self.sk_mapping[self.inc_sk.uuid]['frame'] == self.after_a_number_of_frames and self.request_sent_flag == 0:
+                if self.sk_mapping[self.inc_sk.uuid]['frame'] % 50 == 0:
+                    print "%s / %d frames logged" % (self.sk_mapping[self.inc_sk.uuid]['frame'], self.after_a_number_of_frames)
+                
+                if self.sk_mapping[self.inc_sk.uuid]['frame'] >= self.after_a_number_of_frames and self.request_sent_flag == 0:
                     print "storing the %sth image to mongo for the webserver..." % self.after_a_number_of_frames
                     # Skeleton on white background
                     query = {"_meta.image_type": "white_sk_image"}
@@ -265,6 +268,7 @@ class SkeletonImageLogger(object):
                         self.navgoal.target = self.config[waypoint]['target']
                     except:
                         self.navgoal.target = waypoint
+
                     if self.navgoal.target != waypoint:
                         self.nav_goal_waypoint = waypoint  #to return to after consent
                         self.navClient.send_goal(self.navgoal)
@@ -336,39 +340,48 @@ class SkeletonImageLogger(object):
         self.speech = "Please  may  I  get  your  consent  to  store  video  data  I  just  recorded."
 
     def complete_callback(self, msg):
+        if self.stop_image_callbacks != 0: return
         # print '  -stopped logging user:', msg.uuid
         self.sk_mapping.pop(msg.uuid, None)
         # self.robot_pose = msg
 
     def rgb_callback(self, msg1):
-        self.rgb_msg = msg1
-        rgb = self.cv_bridge.imgmsg_to_cv2(msg1, desired_encoding="passthrough")
-        self.rgb = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
         if self._flag_rgb == 0:
             print 'rgb recived'
             self._flag_rgb = 1
+        
+        if self.stop_image_callbacks != 0: return
+        self.rgb_msg = msg1
+        rgb = self.cv_bridge.imgmsg_to_cv2(msg1, desired_encoding="passthrough")
+        self.rgb = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
+
 
     def rgb_sk_callback(self, msg1):
-        self.rgb_sk_msg = msg1
-        rgb = self.cv_bridge.imgmsg_to_cv2(msg1, desired_encoding="passthrough")
-        self.rgb_sk = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
         if self._flag_rgb_sk == 0:
             print 'rgb+sk recived'
             self._flag_rgb_sk = 1
+                
+        if self.stop_image_callbacks != 0: return
+        self.rgb_sk_msg = msg1
+        rgb = self.cv_bridge.imgmsg_to_cv2(msg1, desired_encoding="passthrough")
+        self.rgb_sk = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
+
 
     def white_sk_callback(self, msg1):
+        if self.stop_image_callbacks != 0: return
         self.white_sk_msg = msg1
 
     def depth_callback(self, imgmsg):
+        if self._flag_depth == 0:
+            print 'depth recived'
+            self._flag_depth = 1
 
+        if self.stop_image_callbacks != 0: return
         self.depth_msg = imgmsg
         depth_image = self.cv_bridge.imgmsg_to_cv2(imgmsg, desired_encoding="passthrough")
         depth_array = np.array(depth_image, dtype=np.float32)
         cv2.normalize(depth_array, depth_array, 0, 1, cv2.NORM_MINMAX)
         self.xtion_img_d_rgb = depth_array*255
-        if self._flag_depth == 0:
-            print 'depth recived'
-            self._flag_depth = 1
 
 
 if __name__ == '__main__':

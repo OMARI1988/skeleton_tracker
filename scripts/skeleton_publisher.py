@@ -29,7 +29,11 @@ class SkeletonManager(object):
         # logging to mongo:
         self._with_logging = rospy.get_param("~log_skeleton", "false")
         self._message_store = rospy.get_param("~message_store", "people_skeleton")
-
+        
+        # initialise data to recieve tf data  ## Moved to the action
+        # self._initialise_data()
+        self.robot_pose_flag = 0
+        
         # listeners:
         self.tf_listener = tf.TransformListener()
         #self.uuid_listener = rospy.Subscriber("/people", user_ID, self.uuid_callback)
@@ -47,15 +51,12 @@ class SkeletonManager(object):
         self.frame_thresh = 5000
         self.dist_thresh = 2.0
         self.dist_flag = 1
-
-        # initialise data to recieve tf data
-        self._initialise_data()
-
+        
         # initialise mongodb client
         if self._with_logging:
             rospy.loginfo("Connecting to mongodb...%s" % self._message_store)
             self._store_client = MessageStoreProxy(collection=self._message_store)
-
+      
 
     def _initialise_data(self):
         #to cope with upto 10 people in the scene
@@ -183,6 +184,7 @@ class SkeletonManager(object):
 
 
     def tracker_state_callback(self, msg):
+        if self.robot_pose_flag != 1: return
         # get the tracker state message and UUID of tracker user
         if msg.message == 'New':
             self.users[msg.userID]["uuid"] = msg.uuid
@@ -191,9 +193,11 @@ class SkeletonManager(object):
         self.users[msg.userID]["timepoint"] = msg.timepoint
 
     def robot_callback(self, msg):
+        if self.robot_pose_flag != 1: return
         self.robot_pose = msg
 
     def node_callback(self, msg):
+        if self.robot_pose_flag != 1: return
         self.current_node = msg.data
 
     def map_callback(self, msg):

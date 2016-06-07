@@ -24,7 +24,7 @@ class skeleton_server(object):
                                                     execute_cb=self.execute_cb, auto_start=False)
         self._as.start()
         self.sk_publisher = SkeletonManager()
-        self.image_logger = SkeletonImageLogger(detection_threshold = 100)
+        self.image_logger = SkeletonImageLogger(detection_threshold = 300)
         self.skeleton_msg = skeleton_message()  #default empty
         self.filepath = os.path.join(roslib.packages.get_pkg_dir("skeleton_tracker"), "config")
         try:
@@ -41,24 +41,30 @@ class skeleton_server(object):
         self.publish_rec = rospy.Publisher('skeleton_data/recording_started', String, queue_size = 1)
         self.publish_rec.publish("init")
 
+        #request_sent
+        self.request_sent_flag = 0
+
 
     def execute_cb(self, goal):
         duration = goal.duration
         start = rospy.Time.now()
         end = rospy.Time.now()
         self.publish_rec.publish("started_rec_callback")   #the cb for this shows the recording webpage
+        self.image_logger.stop_image_callbacks = 0   #start the image callbacks in the logger
+        self.sk_publisher._initialise_data()
+        self.sk_publisher.robot_pose_flag = 1
+        
         print goal
         self.set_ptu_state(goal.waypoint)
-
         prev_uuid = ""
 
         #thread = None
         while (end - start).secs < duration.secs:
             if self._as.is_preempt_requested():
-                self.image_logger.stop = True
+                #self.image_logger.stop = True
                 break
-                # self.reset_all()
                 # return self._as.set_preempted()
+
             if self.image_logger.request_sent_flag != 1:
                 self.sk_publisher.publish_skeleton()
                 rospy.sleep(0.01)  # wait until something is published
@@ -83,10 +89,10 @@ class skeleton_server(object):
                 self.reset_ptu()
 
                 if self.image_logger.consent_ret != None:  #if consent is given:
-                    print "got consent"
+                    #print "got consent"
                     break
             end = rospy.Time.now()
-            rospy.sleep(0.1)
+            #rospy.sleep(0.1)
 
         #if thread is not None:
         #    thread.join()
@@ -148,10 +154,18 @@ class skeleton_server(object):
 
 
     def reset_all(self):
+        self.image_logger.stop_image_callbacks = 0   #stop the image callbacks in the logger
+        self.sk_publisher.robot_pose_flag = 0        #stop the callbacks in the pub
         self.reset_ptu()
         self.publish_rec.publish("finished")   #the cb for this shows the recording webpage
         self.image_logger.go_back_to_where_I_came_from()
+		        
+        ## remove data stored in the publisher (save memory)
+        self.sk_publisher.data = {}
+        self.sk_publisher.users = {}
+        self.sk_publisher.accumulate_data = {}
 
+		 
     def incremental_callback(self, msg):
         self.skeleton_msg = msg
 
