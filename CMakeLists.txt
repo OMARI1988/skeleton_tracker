@@ -36,6 +36,13 @@ add_message_files(
    skeleton_tracker_state.msg
 )
 
+## Generate services in the 'srv' folder
+add_service_files(
+   FILES
+   DeleteImages.srv
+ )
+
+
 add_action_files(
   DIRECTORY action
   FILES skeleton.action

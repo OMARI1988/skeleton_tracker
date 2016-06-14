@@ -211,6 +211,7 @@ public:
     // Initialize the image publisher
     imagePub_ = it_.advertise("/"+camera+"/rgb/image_raw", 1);
     imageSKPub_ = it_.advertise("/"+camera+"/rgb/sk_tracks", 1);
+    imageWhitePub_ = it_.advertise("/"+camera+"/rgb/white_sk_tracks", 1);
 
     // Initialize the point cloud publisher
     pointCloudPub_ = nh_.advertise<pcl::PointCloud<pcl::PointXYZ> >("/"+camera+"/depth_registered/points", 5);
@@ -307,6 +308,8 @@ private:
         rgbInfoPub_.publish(this->fillCameraInfo(msg_->header.stamp, true));
         // cv::flip(mImageRGB, mImageRGB, 1);
         mImageRGB.copyTo(mImage);
+        mImageRGB.copyTo(mImage_white);
+        mImage_white.setTo(cv::Scalar(255,255,255));
 
         msg_ = cv_bridge::CvImage(std_msgs::Header(), "rgb8", mImageRGB).toImageMsg();
       }
@@ -511,7 +514,7 @@ private:
       transform.setRotation(tf::Quaternion(0, 0, 0, 1));
       std::stringstream frame_id_stream;
       std::string frame_id;
-      frame_id_stream << "/" << depth_frame << "/user_" << uid << "/" << j_name;
+      frame_id_stream << depth_frame << "/user_" << uid << "/" << j_name;
       frame_id = frame_id_stream.str();
       tfBroadcast_.sendTransform(tf::StampedTransform(transform, ros::Time::now(), depth_frame, frame_id));
     }
@@ -659,8 +662,23 @@ private:
           cv::line(mImage, cv::Point(XLHip,YLHip),cv::Point(XLK,YLK),cv::Scalar(R1[i],G1[i],B1[i]),2);
           cv::line(mImage, cv::Point(XRK,YRK),cv::Point(XRF,YRF),cv::Scalar(R1[i],G1[i],B1[i]),2);
           cv::line(mImage, cv::Point(XLK,YLK),cv::Point(XLF,YLF),cv::Scalar(R1[i],G1[i],B1[i]),2);
-
           cv::circle(mImage, cv::Point(XH,YH), 8.0, cv::Scalar(R1[i],G1[i],B1[i]), -1, 1 );
+
+          cv::line(mImage_white, cv::Point(XH,YH),cv::Point(XN,YN),cv::Scalar(R1[i],G1[i],B1[i]),2);
+          cv::line(mImage_white, cv::Point(XN,YN),cv::Point(XT,YT),cv::Scalar(R1[i],G1[i],B1[i]),2);
+          cv::line(mImage_white, cv::Point(XN,YN),cv::Point(XLS,YLS),cv::Scalar(R1[i],G1[i],B1[i]),2);
+          cv::line(mImage_white, cv::Point(XLS,YLS),cv::Point(XLE,YLE),cv::Scalar(R1[i],G1[i],B1[i]),2);
+          cv::line(mImage_white, cv::Point(XLE,YLE),cv::Point(XLH,YLH),cv::Scalar(R1[i],G1[i],B1[i]),2);
+          cv::line(mImage_white, cv::Point(XN,YN),cv::Point(XRS,YRS),cv::Scalar(R1[i],G1[i],B1[i]),2);
+          cv::line(mImage_white, cv::Point(XRS,YRS),cv::Point(XRE,YRE),cv::Scalar(R1[i],G1[i],B1[i]),2);
+          cv::line(mImage_white, cv::Point(XRE,YRE),cv::Point(XRH,YRH),cv::Scalar(R1[i],G1[i],B1[i]),2);
+          cv::line(mImage_white, cv::Point(XT,YT),cv::Point(XRHip,YRHip),cv::Scalar(R1[i],G1[i],B1[i]),2);
+          cv::line(mImage_white, cv::Point(XT,YT),cv::Point(XLHip,YLHip),cv::Scalar(R1[i],G1[i],B1[i]),2);
+          cv::line(mImage_white, cv::Point(XRHip,YRHip),cv::Point(XRK,YRK),cv::Scalar(R1[i],G1[i],B1[i]),2);
+          cv::line(mImage_white, cv::Point(XLHip,YLHip),cv::Point(XLK,YLK),cv::Scalar(R1[i],G1[i],B1[i]),2);
+          cv::line(mImage_white, cv::Point(XRK,YRK),cv::Point(XRF,YRF),cv::Scalar(R1[i],G1[i],B1[i]),2);
+          cv::line(mImage_white, cv::Point(XLK,YLK),cv::Point(XLF,YLF),cv::Scalar(R1[i],G1[i],B1[i]),2);
+          cv::circle(mImage_white, cv::Point(XH,YH), 8.0, cv::Scalar(R1[i],G1[i],B1[i]), -1, 1 );
         }
 
         for (JointMap::iterator it = named_joints.begin(); it != named_joints.end(); ++it)
@@ -673,11 +691,15 @@ private:
     }
     // Publish the users' IDs
     userPub_.publish(ids);
-    // cv::flip(mImage, mImage, 1);
     msg_ = cv_bridge::CvImage(std_msgs::Header(), "rgb8", mImage).toImageMsg();
     msg_->header.frame_id = depth_frame;
     msg_->header.stamp = ros::Time::now();
     imageSKPub_.publish(msg_);
+
+    msg_ = cv_bridge::CvImage(std_msgs::Header(), "rgb8", mImage_white).toImageMsg();
+    msg_->header.frame_id = depth_frame;
+    msg_->header.stamp = ros::Time::now();
+    imageWhitePub_.publish(msg_);
 
   }
 
@@ -766,7 +788,9 @@ private:
   image_transport::Publisher imagePub_;
   /// RGB sk tracks image publisher
   image_transport::Publisher imageSKPub_;
+  image_transport::Publisher imageWhitePub_;
   cv::Mat mImage;
+  cv::Mat mImage_white;
   /// Users IDs publisher
   ros::Publisher userPub_;
   /// Point cloud publisher

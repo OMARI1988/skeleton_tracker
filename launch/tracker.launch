@@ -1,22 +1,39 @@
 <launch>
 
+
+  <arg name="machine" default="localhost" />
+  <arg name="user" default="" />
   <arg name="camera" default="camera" />
   <arg name="rgb_frame_id"   default="$(arg camera)_depth_optical_frame" />
   <arg name="depth_frame_id" default="$(arg camera)_depth_optical_frame" />
   <arg name="pub_skeleton" default="True"/>
+  <arg name="delete_service" default="True"/>
   <arg name="stand_alone" default="False"/>
   <arg name="log_skeleton" default="False"/>
   <arg name="message_store" default="people_skeleton"/>
+  <arg name="dataset_path" default="/home/strands/SkeletonDataset/" />
 
-  <node pkg="skeleton_tracker" type="xtion_tracker" name="skeleton_tracker" output="screen">
+  <machine name="$(arg machine)" address="$(arg machine)" env-loader="$(optenv ROS_ENV_LOADER )" user="$(arg user)" default="true"/>
+
+  <node pkg="skeleton_tracker" type="xtion_tracker" name="skeleton_tracker" respawn="true">
   	<param name="camera" type="string" value="/$(arg camera)"/>
   	<param name="rgb_frame" type="string" value="/$(arg rgb_frame_id)"/>
   	<param name="depth_frame" type="string" value="/$(arg depth_frame_id)"/>
   </node>
 
+
+  <node pkg="skeleton_tracker" type="skeleton_action.py" name="skeleton_action" output="screen" respawn="true">
+   	<param name="dataset_path" type="string" value="/$(arg dataset_path)"/>
+  </node>
+
+  <group if="$(arg delete_service)">
+    <node pkg="skeleton_tracker" type="data_deleter.py" name="data_deleter" output="screen" respawn="true">
+    </node>
+  </group>
+
   <group if="$(arg pub_skeleton)">
-    <!-- Transforms /tf to /skeleton_data -->
-    <node pkg="skeleton_tracker" type="skeleton_publisher.py" name="skeleton_publisher" output="screen">
+    <!-- Transforms /tf to /skeleton_data if requested -->
+    <node pkg="skeleton_tracker" type="skeleton_publisher.py" name="skeleton_publisher" output="screen" respawn="false">
           <param name="log_skeleton" value="$(arg log_skeleton)" type="bool"/>
           <param name="message_store" value="$(arg message_store)" type="string"/>
     </node>
