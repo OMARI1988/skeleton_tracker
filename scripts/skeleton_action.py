@@ -161,8 +161,9 @@ class skeleton_server(object):
         self.image_logger.go_back_to_where_I_came_from()
 		        
         ## remove data stored in the publisher (save memory)
-        self.sk_publisher.data = {}
-        self.sk_publisher.users = {}
+        self.sk_publisher._initialise_data()
+        #self.sk_publisher.data = {}
+        #self.sk_publisher.users = {}
         self.sk_publisher.accumulate_data = {}
 
 		 
