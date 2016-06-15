@@ -145,9 +145,9 @@ class SkeletonImageLogger(object):
                     self.bag_file = rosbag.Bag(self.dir1+t+self.inc_sk.uuid+'/detection.bag', 'w')
 
             t = self.sk_mapping[self.inc_sk.uuid]['time']
-            if os.path.exists(self.dir1+t+self.inc_sk.uuid):
+            if os.path.exists(self.dir1+self.date+'_'+t+self.inc_sk.uuid+'_'+waypoint):
                 # setup saving dir and frame
-                d = self.dir1+t+self.inc_sk.uuid+'/'
+                d = self.dir1+self.date+'_'+t+self.inc_sk.uuid+'_'+waypoint+'/'
                 f = self.sk_mapping[self.inc_sk.uuid]['frame']
                 if f < 10:          f_str = '0000'+str(f)
                 elif f < 100:          f_str = '000'+str(f)
