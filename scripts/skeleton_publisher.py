@@ -29,11 +29,11 @@ class SkeletonManager(object):
         # logging to mongo:
         self._with_logging = rospy.get_param("~log_skeleton", "false")
         self._message_store = rospy.get_param("~message_store", "people_skeleton")
-        
+
         # initialise data to recieve tf data  ## Moved to the action
         # self._initialise_data()
         self.robot_pose_flag = 0
-        
+
         # listeners:
         self.tf_listener = tf.TransformListener()
         #self.uuid_listener = rospy.Subscriber("/people", user_ID, self.uuid_callback)
@@ -51,12 +51,12 @@ class SkeletonManager(object):
         self.frame_thresh = 5000
         self.dist_thresh = 2.0
         self.dist_flag = 1
-        
+
         # initialise mongodb client
         if self._with_logging:
             rospy.loginfo("Connecting to mongodb...%s" % self._message_store)
             self._store_client = MessageStoreProxy(collection=self._message_store)
-      
+        print ">>initialised publisher"
 
     def _initialise_data(self):
         #to cope with upto 10 people in the scene
@@ -147,7 +147,7 @@ class SkeletonManager(object):
 
         #publish this for the action server if no subj in scene
         if len(list_of_subs) == 0:
-               self.publish_incr.publish(incr_msg)
+            self.publish_incr.publish(incr_msg)
 
 
     def _accumulate_data(self, subj, current_msg):

@@ -42,7 +42,7 @@ class SkeletonImageLogger(object):
         # self.dir1 = '/home/lucie02/Datasets/Lucie/'+self.date+'/'
 
         self.dir1 = '/home/' + getpass.getuser() + '/SkeletonDataset/pre_consent/' + self.date+'/'
-        print 'checking if folder exists:', self.dir1
+        #print 'checking if folder exists:', self.dir1
         if not os.path.exists(self.dir1):
             print '  -create folder:',self.dir1
             os.makedirs(self.dir1)
@@ -53,9 +53,10 @@ class SkeletonImageLogger(object):
         except:
             print "no config file found"
 
-        # PTU state - based upon current_node callback
+        # PTU state - based upon current_node
         self.ptu_action_client = actionlib.SimpleActionClient('/SetPTUState', PtuGotoAction)
-        self.ptu_action_client.wait_for_server()
+        #add this!!
+        #self.ptu_action_client.wait_for_server()
 
         # get the last skeleton recorded
         self.sk_mapping = {}
@@ -93,10 +94,6 @@ class SkeletonImageLogger(object):
         rospy.Subscriber('/'+self.camera+'/rgb/white_sk_tracks', sensor_msgs.msg.Image, callback=self.white_sk_callback, queue_size=10)
         rospy.Subscriber('/'+self.camera+'/depth/image' , sensor_msgs.msg.Image, self.depth_callback, queue_size=10)
 
-		# PTU state
-        self.ptu_action_client = actionlib.SimpleActionClient('/SetPTUState', PtuGotoAction)
-        self.ptu_action_client.wait_for_server()
-
         # gazing action server
         self.gaze_client()
 
@@ -105,7 +102,7 @@ class SkeletonImageLogger(object):
 
         # speak
         self.speak()
-
+        print ">>initialised logger"
 
     def robot_callback(self, msg):
         self.robot_pose = msg
@@ -115,6 +112,7 @@ class SkeletonImageLogger(object):
 
 
     def callback(self, msg, waypoint):
+
         self.inc_sk = msg
         if str(datetime.datetime.now().date()) != self.date:
             print 'new day!'
@@ -124,8 +122,9 @@ class SkeletonImageLogger(object):
             if not os.path.exists(self.dir1):
                 print '  -create folder:',self.dir1
                 os.makedirs(self.dir1)
-        # print self.inc_sk.uuid
+
         if self._flag_robot and self._flag_rgb and self._flag_rgb_sk and not self.stop_image_callbacks:
+
             if self.inc_sk.uuid not in self.sk_mapping:
                 self.sk_mapping[self.inc_sk.uuid] = {}
                 self.sk_mapping[self.inc_sk.uuid]['frame'] = 1
@@ -133,21 +132,25 @@ class SkeletonImageLogger(object):
                 t = self.sk_mapping[self.inc_sk.uuid]['time']
                 print '  -new skeleton detected with id:', self.inc_sk.uuid
                 # print '  -creating folder:',t+self.inc_sk.uuid
-                if not os.path.exists(self.dir1+t+self.inc_sk.uuid):
-                    os.makedirs(self.dir1+t+self.inc_sk.uuid)
-                    os.makedirs(self.dir1+t+self.inc_sk.uuid+'/rgb')
-                    os.makedirs(self.dir1+t+self.inc_sk.uuid+'/depth')
-                    os.makedirs(self.dir1+t+self.inc_sk.uuid+'/rgb_sk')
-                    os.makedirs(self.dir1+t+self.inc_sk.uuid+'/robot')
-                    os.makedirs(self.dir1+t+self.inc_sk.uuid+'/skeleton')
+                new_dir = self.dir1+self.date+'_'+t+self.inc_sk.uuid+'_'+waypoint
+                print "new", new_dir
+
+                if not os.path.exists(new_dir):
+                    os.makedirs(new_dir)
+                    os.makedirs(new_dir+'/rgb')
+                    os.makedirs(new_dir+'/depth')
+                    os.makedirs(new_dir+'/rgb_sk')
+                    os.makedirs(new_dir+'/robot')
+                    os.makedirs(new_dir+'/skeleton')
 
                     # create the empty bag file (closed in /skeleton_action)
-                    self.bag_file = rosbag.Bag(self.dir1+t+self.inc_sk.uuid+'/detection.bag', 'w')
+                    self.bag_file = rosbag.Bag(new_dir+'/detection.bag', 'w')
 
             t = self.sk_mapping[self.inc_sk.uuid]['time']
-            if os.path.exists(self.dir1+self.date+'_'+t+self.inc_sk.uuid+'_'+waypoint):
+            new_dir = self.dir1+self.date+'_'+t+self.inc_sk.uuid+'_'+waypoint
+            if os.path.exists(new_dir):
                 # setup saving dir and frame
-                d = self.dir1+self.date+'_'+t+self.inc_sk.uuid+'_'+waypoint+'/'
+                d = new_dir+'/'
                 f = self.sk_mapping[self.inc_sk.uuid]['frame']
                 if f < 10:          f_str = '0000'+str(f)
                 elif f < 100:          f_str = '000'+str(f)
@@ -228,11 +231,11 @@ class SkeletonImageLogger(object):
                     f1.write('z:'+str(i.pose.orientation.z)+'\n')
                     f1.write('w:'+str(i.pose.orientation.w)+'\n')
                 f1.close()
-                
+
                 # update frame number
                 if self.inc_sk.uuid in self.sk_mapping:
                     self.sk_mapping[self.inc_sk.uuid]['frame'] += 1
-                    
+
                 #publish the gaze request of person on every detection:
                 if self.inc_sk.joints[0].name == 'head':
                     head = Header(frame_id='head_xtion_depth_optical_frame')
@@ -243,7 +246,7 @@ class SkeletonImageLogger(object):
                 # all this should happen given a good number of detections:
                 if self.sk_mapping[self.inc_sk.uuid]['frame'] % 50 == 0:
                     print "%s / %d frames logged" % (self.sk_mapping[self.inc_sk.uuid]['frame'], self.after_a_number_of_frames)
-                
+
                 if self.sk_mapping[self.inc_sk.uuid]['frame'] >= self.after_a_number_of_frames and self.request_sent_flag == 0:
                     print "storing the %sth image to mongo for the webserver..." % self.after_a_number_of_frames
                     # Skeleton on white background
@@ -280,7 +283,7 @@ class SkeletonImageLogger(object):
                     rospy.sleep(0.1)
                     if self.request_sent_flag:
                         self.speaker.send_goal(maryttsGoal(text=self.speech))
-                    
+
                     #while self.consent_ret is None and not self.stop:
                     #    rospy.sleep(0.1)
 
@@ -349,7 +352,7 @@ class SkeletonImageLogger(object):
         if self._flag_rgb == 0:
             print 'rgb recived'
             self._flag_rgb = 1
-        
+
         if self.stop_image_callbacks != 0: return
         self.rgb_msg = msg1
         rgb = self.cv_bridge.imgmsg_to_cv2(msg1, desired_encoding="passthrough")
@@ -360,7 +363,7 @@ class SkeletonImageLogger(object):
         if self._flag_rgb_sk == 0:
             print 'rgb+sk recived'
             self._flag_rgb_sk = 1
-                
+
         if self.stop_image_callbacks != 0: return
         self.rgb_sk_msg = msg1
         rgb = self.cv_bridge.imgmsg_to_cv2(msg1, desired_encoding="passthrough")

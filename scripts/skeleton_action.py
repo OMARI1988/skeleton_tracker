@@ -18,7 +18,7 @@ class skeleton_server(object):
     def __init__(self):
         # Start server
         rospy.loginfo("Skeleton Publisher starting an action server")
-        self.skeleton_msg = None
+        # self.skeleton_msg = None
         rospy.Subscriber('skeleton_data/incremental', skeleton_message,callback=self.incremental_callback, queue_size = 10)
         self._as = actionlib.SimpleActionServer("skeleton_action", skeletonAction, \
                                                     execute_cb=self.execute_cb, auto_start=False)
@@ -29,7 +29,7 @@ class skeleton_server(object):
         self.filepath = os.path.join(roslib.packages.get_pkg_dir("skeleton_tracker"), "config")
         try:
             self.config = yaml.load(open(os.path.join(self.filepath, 'config.ini'), 'r'))
-            print "config loaded:", self.config
+            print "config file loaded", self.config.keys()
         except:
             print "no config file found"
 
@@ -53,7 +53,7 @@ class skeleton_server(object):
         self.image_logger.stop_image_callbacks = 0   #start the image callbacks in the logger
         self.sk_publisher._initialise_data()
         self.sk_publisher.robot_pose_flag = 1
-        
+
         print goal
         self.set_ptu_state(goal.waypoint)
         prev_uuid = ""
@@ -72,7 +72,7 @@ class skeleton_server(object):
                 #when a skeleton incremental msg is received
                 if self.skeleton_msg.uuid != "":
 
-                    #print "tracking person: ", self.skeleton_msg.uuid 
+                    #print "tracking person: ", self.skeleton_msg.uuid
                     prev_uuid = self.skeleton_msg.uuid
                     self.sk_publisher.logged_uuid = prev_uuid
 
@@ -159,14 +159,14 @@ class skeleton_server(object):
         self.reset_ptu()
         self.publish_rec.publish("finished")   #the cb for this shows the recording webpage
         self.image_logger.go_back_to_where_I_came_from()
-		        
+
         ## remove data stored in the publisher (save memory)
         self.sk_publisher._initialise_data()
         #self.sk_publisher.data = {}
         #self.sk_publisher.users = {}
         self.sk_publisher.accumulate_data = {}
 
-		 
+
     def incremental_callback(self, msg):
         self.skeleton_msg = msg
 
