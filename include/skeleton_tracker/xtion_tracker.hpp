@@ -252,20 +252,9 @@ public:
     // Broadcast the depth image
     this->getDepth();
 
-    // If required, publish point_cloud
-    // if (pointCloudPub_.getNumSubscribers() > 0)
-    // {
-    //   this->getPointCloud();
-    // }
-
-
-    // Broadcast the depth camera info
-    // depthInfoPub_.publish(this->fillCameraInfo(ros::Time::now(), false));
-
     // Broadcast the joint frames (if they exist)
-    // this->getSkeleton(); //uncomment
+    this->getSkeleton(); //uncomment
 
-    // rate_->sleep();
   }
 
 private:
@@ -307,7 +296,7 @@ private:
         // Publish the rgb camera info
         rgbInfoPub_.publish(this->fillCameraInfo(msg_->header.stamp, true));
         // cv::flip(mImageRGB, mImageRGB, 1);
-        // mImageRGB.copyTo(mImage); uncomment
+        mImageRGB.copyTo(mImage); //uncomment
       }
       else
       {
@@ -449,41 +438,41 @@ private:
     float cy = 239.5;
 
 
-    std::vector<int> R1 (10);
-    std::vector<int> G1 (10);
-    std::vector<int> B1 (10);
+    std::vector<int> R1 (3);
+    std::vector<int> G1 (3);
+    std::vector<int> B1 (3);
     R1[0] = 255;
     R1[1] = 0;
     R1[2] = 0;
-    R1[3] = 0;
-    R1[4] = 255;
-    R1[5] = 255;
-    R1[6] = 128;
-    R1[7] = 128;
-    R1[8] = 255;
-    R1[9] = 40;
+    // R1[3] = 0;
+    // R1[4] = 255;
+    // R1[5] = 255;
+    // R1[6] = 128;
+    // R1[7] = 128;
+    // R1[8] = 255;
+    // R1[9] = 40;
 
     G1[0] = 0;
     G1[1] = 255;
     G1[2] = 0;
-    G1[3] = 255;
-    G1[4] = 0;
-    G1[5] = 128;
-    G1[6] = 128;
-    G1[7] = 0;
-    G1[8] = 128;
-    G1[9] = 200;
+    // G1[3] = 255;
+    // G1[4] = 0;
+    // G1[5] = 128;
+    // G1[6] = 128;
+    // G1[7] = 0;
+    // G1[8] = 128;
+    // G1[9] = 200;
 
     B1[0] = 0;
     B1[1] = 0;
     B1[2] = 255;
-    B1[3] = 255;
-    B1[4] = 255;
-    B1[5] = 128;
-    B1[6] = 128;
-    B1[7] = 0;
-    B1[8] = 0;
-    B1[9] = 100;
+    // B1[3] = 255;
+    // B1[4] = 255;
+    // B1[5] = 128;
+    // B1[6] = 128;
+    // B1[7] = 0;
+    // B1[8] = 0;
+    // B1[9] = 100;
 
     skeleton_tracker::user_IDs ids;
     niteRc_ = userTracker_.readFrame(&userTrackerFrame_);
@@ -527,8 +516,8 @@ private:
 
         if (!mImage.empty())
         {
-          int X = 0;
-          int Y = 0;
+          // int X = 0;
+          // int Y = 0;
           int XH = int(named_joints["head"].getPosition().x*fx/named_joints["head"].getPosition().z +cx);
           int YH = int(named_joints["head"].getPosition().y*fy/named_joints["head"].getPosition().z*-1 +cy);
           int XN = int(named_joints["neck"].getPosition().x*fx/named_joints["neck"].getPosition().z*1 +cx);
@@ -564,20 +553,20 @@ private:
           int XLF = int(named_joints["left_foot"].getPosition().x*fx/named_joints["left_foot"].getPosition().z*1 +cx);
           int YLF = int(named_joints["left_foot"].getPosition().y*fy/named_joints["left_foot"].getPosition().z*-1 +cy);
 
-          cv::line(mImage, cv::Point(XH,YH),cv::Point(XN,YN),cv::Scalar(R1[i],G1[i],B1[i]),2);
-          cv::line(mImage, cv::Point(XN,YN),cv::Point(XT,YT),cv::Scalar(R1[i],G1[i],B1[i]),2);
-          cv::line(mImage, cv::Point(XN,YN),cv::Point(XLS,YLS),cv::Scalar(R1[i],G1[i],B1[i]),2);
-          cv::line(mImage, cv::Point(XLS,YLS),cv::Point(XLE,YLE),cv::Scalar(R1[i],G1[i],B1[i]),2);
-          cv::line(mImage, cv::Point(XLE,YLE),cv::Point(XLH,YLH),cv::Scalar(R1[i],G1[i],B1[i]),2);
-          cv::line(mImage, cv::Point(XN,YN),cv::Point(XRS,YRS),cv::Scalar(R1[i],G1[i],B1[i]),2);
-          cv::line(mImage, cv::Point(XRS,YRS),cv::Point(XRE,YRE),cv::Scalar(R1[i],G1[i],B1[i]),2);
-          cv::line(mImage, cv::Point(XRE,YRE),cv::Point(XRH,YRH),cv::Scalar(R1[i],G1[i],B1[i]),2);
-          cv::line(mImage, cv::Point(XT,YT),cv::Point(XRHip,YRHip),cv::Scalar(R1[i],G1[i],B1[i]),2);
-          cv::line(mImage, cv::Point(XT,YT),cv::Point(XLHip,YLHip),cv::Scalar(R1[i],G1[i],B1[i]),2);
-          cv::line(mImage, cv::Point(XRHip,YRHip),cv::Point(XRK,YRK),cv::Scalar(R1[i],G1[i],B1[i]),2);
-          cv::line(mImage, cv::Point(XLHip,YLHip),cv::Point(XLK,YLK),cv::Scalar(R1[i],G1[i],B1[i]),2);
-          cv::line(mImage, cv::Point(XRK,YRK),cv::Point(XRF,YRF),cv::Scalar(R1[i],G1[i],B1[i]),2);
-          cv::line(mImage, cv::Point(XLK,YLK),cv::Point(XLF,YLF),cv::Scalar(R1[i],G1[i],B1[i]),2);
+          cv::line(mImage, cv::Point(XH,YH),cv::Point(XN,YN),cv::Scalar(R1[i],G1[i],B1[i]),3);
+          cv::line(mImage, cv::Point(XN,YN),cv::Point(XT,YT),cv::Scalar(R1[i],G1[i],B1[i]),3);
+          cv::line(mImage, cv::Point(XN,YN),cv::Point(XLS,YLS),cv::Scalar(R1[i],G1[i],B1[i]),3);
+          cv::line(mImage, cv::Point(XLS,YLS),cv::Point(XLE,YLE),cv::Scalar(R1[i],G1[i],B1[i]),3);
+          cv::line(mImage, cv::Point(XLE,YLE),cv::Point(XLH,YLH),cv::Scalar(R1[i],G1[i],B1[i]),3);
+          cv::line(mImage, cv::Point(XN,YN),cv::Point(XRS,YRS),cv::Scalar(R1[i],G1[i],B1[i]),3);
+          cv::line(mImage, cv::Point(XRS,YRS),cv::Point(XRE,YRE),cv::Scalar(R1[i],G1[i],B1[i]),3);
+          cv::line(mImage, cv::Point(XRE,YRE),cv::Point(XRH,YRH),cv::Scalar(R1[i],G1[i],B1[i]),3);
+          cv::line(mImage, cv::Point(XT,YT),cv::Point(XRHip,YRHip),cv::Scalar(R1[i],G1[i],B1[i]),3);
+          cv::line(mImage, cv::Point(XT,YT),cv::Point(XLHip,YLHip),cv::Scalar(R1[i],G1[i],B1[i]),3);
+          cv::line(mImage, cv::Point(XRHip,YRHip),cv::Point(XRK,YRK),cv::Scalar(R1[i],G1[i],B1[i]),3);
+          cv::line(mImage, cv::Point(XLHip,YLHip),cv::Point(XLK,YLK),cv::Scalar(R1[i],G1[i],B1[i]),3);
+          cv::line(mImage, cv::Point(XRK,YRK),cv::Point(XRF,YRF),cv::Scalar(R1[i],G1[i],B1[i]),3);
+          cv::line(mImage, cv::Point(XLK,YLK),cv::Point(XLF,YLF),cv::Scalar(R1[i],G1[i],B1[i]),3);
           cv::circle(mImage, cv::Point(XH,YH), 8.0, cv::Scalar(R1[i],G1[i],B1[i]), -1, 1 );
         }
 
