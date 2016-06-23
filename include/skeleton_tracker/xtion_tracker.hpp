@@ -227,7 +227,7 @@ public:
 
     rgbInfoPub_ = nh_.advertise<sensor_msgs::CameraInfo>("/"+camera+"/rgb/camera_info", 1);
 
-    rate_ = new ros::Rate(300);
+    // rate_ = new ros::Rate(300);
 
     // Initialize the skeleton state publisher
     skeleton_state_pub_ = nh_.advertise<skeleton_tracker::skeleton_tracker_state>("skeleton_data/state", 10);
@@ -437,13 +437,17 @@ private:
     float cx = 319.5;
     float cy = 239.5;
 
+    int R1 = 30;
+    int G1 = 210;
+    int B1 = 170;
 
-    std::vector<int> R1 (3);
-    std::vector<int> G1 (3);
-    std::vector<int> B1 (3);
-    R1[0] = 255;
-    R1[1] = 0;
-    R1[2] = 0;
+
+    // std::vector<int> R1 (1);
+    // std::vector<int> G1 (1);
+    // std::vector<int> B1 (1);
+    // R1[0] = 255;
+    // R1[1] = 0;
+    // R1[2] = 0;
     // R1[3] = 0;
     // R1[4] = 255;
     // R1[5] = 255;
@@ -452,9 +456,9 @@ private:
     // R1[8] = 255;
     // R1[9] = 40;
 
-    G1[0] = 0;
-    G1[1] = 255;
-    G1[2] = 0;
+    // G1[0] = 0;
+    // G1[1] = 255;
+    // G1[2] = 0;
     // G1[3] = 255;
     // G1[4] = 0;
     // G1[5] = 128;
@@ -463,9 +467,9 @@ private:
     // G1[8] = 128;
     // G1[9] = 200;
 
-    B1[0] = 0;
-    B1[1] = 0;
-    B1[2] = 255;
+    // B1[0] = 80;
+    // B1[1] = 0;
+    // B1[2] = 255;
     // B1[3] = 255;
     // B1[4] = 255;
     // B1[5] = 128;
@@ -553,21 +557,37 @@ private:
           int XLF = int(named_joints["left_foot"].getPosition().x*fx/named_joints["left_foot"].getPosition().z*1 +cx);
           int YLF = int(named_joints["left_foot"].getPosition().y*fy/named_joints["left_foot"].getPosition().z*-1 +cy);
 
-          cv::line(mImage, cv::Point(XH,YH),cv::Point(XN,YN),cv::Scalar(R1[i],G1[i],B1[i]),3);
-          cv::line(mImage, cv::Point(XN,YN),cv::Point(XT,YT),cv::Scalar(R1[i],G1[i],B1[i]),3);
-          cv::line(mImage, cv::Point(XN,YN),cv::Point(XLS,YLS),cv::Scalar(R1[i],G1[i],B1[i]),3);
-          cv::line(mImage, cv::Point(XLS,YLS),cv::Point(XLE,YLE),cv::Scalar(R1[i],G1[i],B1[i]),3);
-          cv::line(mImage, cv::Point(XLE,YLE),cv::Point(XLH,YLH),cv::Scalar(R1[i],G1[i],B1[i]),3);
-          cv::line(mImage, cv::Point(XN,YN),cv::Point(XRS,YRS),cv::Scalar(R1[i],G1[i],B1[i]),3);
-          cv::line(mImage, cv::Point(XRS,YRS),cv::Point(XRE,YRE),cv::Scalar(R1[i],G1[i],B1[i]),3);
-          cv::line(mImage, cv::Point(XRE,YRE),cv::Point(XRH,YRH),cv::Scalar(R1[i],G1[i],B1[i]),3);
-          cv::line(mImage, cv::Point(XT,YT),cv::Point(XRHip,YRHip),cv::Scalar(R1[i],G1[i],B1[i]),3);
-          cv::line(mImage, cv::Point(XT,YT),cv::Point(XLHip,YLHip),cv::Scalar(R1[i],G1[i],B1[i]),3);
-          cv::line(mImage, cv::Point(XRHip,YRHip),cv::Point(XRK,YRK),cv::Scalar(R1[i],G1[i],B1[i]),3);
-          cv::line(mImage, cv::Point(XLHip,YLHip),cv::Point(XLK,YLK),cv::Scalar(R1[i],G1[i],B1[i]),3);
-          cv::line(mImage, cv::Point(XRK,YRK),cv::Point(XRF,YRF),cv::Scalar(R1[i],G1[i],B1[i]),3);
-          cv::line(mImage, cv::Point(XLK,YLK),cv::Point(XLF,YLF),cv::Scalar(R1[i],G1[i],B1[i]),3);
-          cv::circle(mImage, cv::Point(XH,YH), 8.0, cv::Scalar(R1[i],G1[i],B1[i]), -1, 1 );
+          cv::line(mImage, cv::Point(XH,YH),cv::Point(XN,YN),cv::Scalar(R1,G1,B1),3);
+          cv::line(mImage, cv::Point(XN,YN),cv::Point(XT,YT),cv::Scalar(R1,G1,B1),3);
+          cv::line(mImage, cv::Point(XN,YN),cv::Point(XLS,YLS),cv::Scalar(R1,G1,B1),3);
+          cv::line(mImage, cv::Point(XLS,YLS),cv::Point(XLE,YLE),cv::Scalar(R1,G1,B1),3);
+          cv::line(mImage, cv::Point(XLE,YLE),cv::Point(XLH,YLH),cv::Scalar(R1,G1,B1),3);
+          cv::line(mImage, cv::Point(XN,YN),cv::Point(XRS,YRS),cv::Scalar(R1,G1,B1),3);
+          cv::line(mImage, cv::Point(XRS,YRS),cv::Point(XRE,YRE),cv::Scalar(R1,G1,B1),3);
+          cv::line(mImage, cv::Point(XRE,YRE),cv::Point(XRH,YRH),cv::Scalar(R1,G1,B1),3);
+          cv::line(mImage, cv::Point(XT,YT),cv::Point(XRHip,YRHip),cv::Scalar(R1,G1,B1),3);
+          cv::line(mImage, cv::Point(XT,YT),cv::Point(XLHip,YLHip),cv::Scalar(R1,G1,B1),3);
+          cv::line(mImage, cv::Point(XRHip,YRHip),cv::Point(XRK,YRK),cv::Scalar(R1,G1,B1),3);
+          cv::line(mImage, cv::Point(XLHip,YLHip),cv::Point(XLK,YLK),cv::Scalar(R1,G1,B1),3);
+          cv::line(mImage, cv::Point(XRK,YRK),cv::Point(XRF,YRF),cv::Scalar(R1,G1,B1),3);
+          cv::line(mImage, cv::Point(XLK,YLK),cv::Point(XLF,YLF),cv::Scalar(R1,G1,B1),3);
+          cv::circle(mImage, cv::Point(XH,YH), 8.0, cv::Scalar(R1,G1,B1), -1, 1 );
+
+          // cv::line(mImage, cv::Point(XH,YH),cv::Point(XN,YN),cv::Scalar(R1[i],G1[i],B1[i]),3);
+          // cv::line(mImage, cv::Point(XN,YN),cv::Point(XT,YT),cv::Scalar(R1[i],G1[i],B1[i]),3);
+          // cv::line(mImage, cv::Point(XN,YN),cv::Point(XLS,YLS),cv::Scalar(R1[i],G1[i],B1[i]),3);
+          // cv::line(mImage, cv::Point(XLS,YLS),cv::Point(XLE,YLE),cv::Scalar(R1[i],G1[i],B1[i]),3);
+          // cv::line(mImage, cv::Point(XLE,YLE),cv::Point(XLH,YLH),cv::Scalar(R1[i],G1[i],B1[i]),3);
+          // cv::line(mImage, cv::Point(XN,YN),cv::Point(XRS,YRS),cv::Scalar(R1[i],G1[i],B1[i]),3);
+          // cv::line(mImage, cv::Point(XRS,YRS),cv::Point(XRE,YRE),cv::Scalar(R1[i],G1[i],B1[i]),3);
+          // cv::line(mImage, cv::Point(XRE,YRE),cv::Point(XRH,YRH),cv::Scalar(R1[i],G1[i],B1[i]),3);
+          // cv::line(mImage, cv::Point(XT,YT),cv::Point(XRHip,YRHip),cv::Scalar(R1[i],G1[i],B1[i]),3);
+          // cv::line(mImage, cv::Point(XT,YT),cv::Point(XLHip,YLHip),cv::Scalar(R1[i],G1[i],B1[i]),3);
+          // cv::line(mImage, cv::Point(XRHip,YRHip),cv::Point(XRK,YRK),cv::Scalar(R1[i],G1[i],B1[i]),3);
+          // cv::line(mImage, cv::Point(XLHip,YLHip),cv::Point(XLK,YLK),cv::Scalar(R1[i],G1[i],B1[i]),3);
+          // cv::line(mImage, cv::Point(XRK,YRK),cv::Point(XRF,YRF),cv::Scalar(R1[i],G1[i],B1[i]),3);
+          // cv::line(mImage, cv::Point(XLK,YLK),cv::Point(XLF,YLF),cv::Scalar(R1[i],G1[i],B1[i]),3);
+          // cv::circle(mImage, cv::Point(XH,YH), 8.0, cv::Scalar(R1[i],G1[i],B1[i]), -1, 1 );
         }
 
         for (JointMap::iterator it = named_joints.begin(); it != named_joints.end(); ++it)
