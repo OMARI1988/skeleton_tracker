@@ -51,7 +51,7 @@
 #define ALPHA 1/256
 #endif
 
-#define MAX_USERS 9
+#define MAX_USERS 2
 
 #define USER_MESSAGE(msg) \
         {printf("[%08llu] User #%d:\t%s\n",ts, user.getId(),msg);}
@@ -211,10 +211,10 @@ public:
     // Initialize the image publisher
     imagePub_ = it_.advertise("/"+camera+"/rgb/image_raw", 1);
     imageSKPub_ = it_.advertise("/"+camera+"/rgb/sk_tracks", 1);
-    imageWhitePub_ = it_.advertise("/"+camera+"/rgb/white_sk_tracks", 1);
+    // imageWhitePub_ = it_.advertise("/"+camera+"/rgb/white_sk_tracks", 1);
 
     // Initialize the point cloud publisher
-    pointCloudPub_ = nh_.advertise<pcl::PointCloud<pcl::PointXYZ> >("/"+camera+"/depth_registered/points", 5);
+    // pointCloudPub_ = nh_.advertise<pcl::PointCloud<pcl::PointXYZ> >("/"+camera+"/depth_registered/points", 5);
 
     // Initialize the depth image publisher
     depthPub_ = it_.advertise("/"+camera+"/depth/image_raw", 1);
@@ -227,7 +227,7 @@ public:
 
     rgbInfoPub_ = nh_.advertise<sensor_msgs::CameraInfo>("/"+camera+"/rgb/camera_info", 1);
 
-    rate_ = new ros::Rate(100);
+    rate_ = new ros::Rate(300);
 
     // Initialize the skeleton state publisher
     skeleton_state_pub_ = nh_.advertise<skeleton_tracker::skeleton_tracker_state>("skeleton_data/state", 10);
@@ -263,9 +263,9 @@ public:
     // depthInfoPub_.publish(this->fillCameraInfo(ros::Time::now(), false));
 
     // Broadcast the joint frames (if they exist)
-    this->getSkeleton();
+    // this->getSkeleton(); //uncomment
 
-    rate_->sleep();
+    // rate_->sleep();
   }
 
 private:
@@ -307,11 +307,7 @@ private:
         // Publish the rgb camera info
         rgbInfoPub_.publish(this->fillCameraInfo(msg_->header.stamp, true));
         // cv::flip(mImageRGB, mImageRGB, 1);
-        mImageRGB.copyTo(mImage);
-        mImageRGB.copyTo(mImage_white);
-        mImage_white.setTo(cv::Scalar(255,255,255));
-
-        msg_ = cv_bridge::CvImage(std_msgs::Header(), "rgb8", mImageRGB).toImageMsg();
+        // mImageRGB.copyTo(mImage); uncomment
       }
       else
       {
@@ -324,89 +320,12 @@ private:
       ROS_ERROR("Unable to get RGB video");
     }
   }
-
-  /**
-   * Get and publish the point cloud message
-   */
-  void getPointCloud()
-  {
-    float centerX, centerY;
-    unsigned depthStep = 1, depthSkip = 0;
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_msg(new pcl::PointCloud<pcl::PointXYZRGB>());
-    // Get the depth stream
-    depthStream_.start();
-    if (depthStream_.readFrame(&depthFrame_) == openni::STATUS_OK)
-    {
-      unsigned color_step, color_skip;
-      // Get some information about the sensor
-      openni::DeviceInfo info = devDevice_.getDeviceInfo();
-      const char* uri = info.getUri();
-      std::string stringa(uri);
-      openni2_wrapper::OpenNI2Device dev(stringa);
-      // Fill in the message
-      cloud_msg->header.stamp = 0;
-      cloud_msg->width = depthFrame_.getWidth();
-      cloud_msg->height = depthFrame_.getHeight();
-      centerX = (cloud_msg->width >> 1) - 0.5f;
-      centerY = (cloud_msg->height >> 1) - 0.5f;
-      cloud_msg->is_dense = false;
-      cloud_msg->points.resize((unsigned long)(cloud_msg->height * cloud_msg->width));
-      color_step = 3 * msg_->width / cloud_msg->width;
-      color_skip = 3 * (msg_->height / cloud_msg->height - 1) * msg_->width;
-
-      const uint8_t* rgb_buffer = &msg_->data[0];
-
-      // Get the depth data
-      const openni::DepthPixel* pDepth = (const openni::DepthPixel*)depthFrame_.getData();
-
-      float bad_point = std::numeric_limits<float>::quiet_NaN();
-
-      float constant = 0.001 / dev.getDepthFocalLength(depthFrame_.getHeight());
-
-      cloud_msg->header.frame_id = depth_frame;
-
-      int color_idx = 0, depth_idx = 0;
-      pcl::PointCloud<pcl::PointXYZRGB>::iterator pt_iter = cloud_msg->begin();
-      // Fill in the cloud by merging the depth datat with the color image
-      for (int v = 0; v < (int)cloud_msg->height; ++v, color_idx += color_skip)
-      {
-        for (int u = 0; u < (int)cloud_msg->width; ++u, color_idx += color_step, ++depth_idx, ++pt_iter)
-        {
-          pcl::PointXYZRGB& pt = *pt_iter;
-
-          if (pDepth[depth_idx] == 0 || pDepth[depth_idx] > 10000)
-          {
-            // not valid
-            pt.x = pt.y = pt.z = bad_point;
-            continue;
-          }
-          // Fill in XYZRGB
-          pt.x = (u - centerX) * pDepth[depth_idx] * constant;
-          pt.y = (v - centerY) * pDepth[depth_idx] * constant;
-          pt.z = pDepth[depth_idx] * 0.001;
-          RGBValue color;
-          color.Red = rgb_buffer[color_idx];
-          color.Green = rgb_buffer[color_idx + 1];
-          color.Blue = rgb_buffer[color_idx + 2];
-          color.Alpha = 0;
-          pt.rgb = color.float_value;
-        }
-      }
-      // Publish to ROS
-      sensor_msgs::PointCloud2 pc;
-      pcl::toROSMsg(*cloud_msg, pc);
-      pc.header.stamp = ros::Time::now();
-      pointCloudPub_.publish(pc);
-    }
-
-  }
-
   /**
    * This method publishes the depth image on ROS
    */
   void getDepth()
   {
-    depthStream_.start();
+    // depthStream_.start();
     depthStream_.readFrame(&depthFrame_);
     // If the obtained frame is valid, then publish it over  ROS
     if (depthFrame_.isValid())
@@ -417,21 +336,18 @@ private:
                               CV_16UC1,
                               pData);
 
-      // image.convertTo(image, CV_32FC1, 0.001);
-      // cv::flip(image, image, 1);
-      cv_bridge::CvImage out_msg;
-      out_msg.header.stamp = ros::Time::now();
-      out_msg.encoding = sensor_msgs::image_encodings::TYPE_16UC1;
-      out_msg.image = image;
-
-      out_msg.header.frame_id = depth_frame;
-      depthPub_.publish(out_msg.toImageMsg());
-      depthInfoPub_.publish(this->fillCameraInfo(out_msg.header.stamp, false));
+      msg_depth = cv_bridge::CvImage(std_msgs::Header(), "16UC1", image).toImageMsg();
+      msg_depth->header.frame_id = depth_frame;
+      msg_depth->header.stamp = ros::Time::now();
+      depthPub_.publish(msg_depth);
+      // rgbInfoPub_.publish(this->fillCameraInfo(msg_->header.stamp, true));
+      depthInfoPub_.publish(this->fillCameraInfo(msg_depth->header.stamp, false));
     }
     else
     {
       ROS_ERROR("Unable to publish depth-image");
     }
+    // depthFrame_.release();
 
   }
 
@@ -663,22 +579,6 @@ private:
           cv::line(mImage, cv::Point(XRK,YRK),cv::Point(XRF,YRF),cv::Scalar(R1[i],G1[i],B1[i]),2);
           cv::line(mImage, cv::Point(XLK,YLK),cv::Point(XLF,YLF),cv::Scalar(R1[i],G1[i],B1[i]),2);
           cv::circle(mImage, cv::Point(XH,YH), 8.0, cv::Scalar(R1[i],G1[i],B1[i]), -1, 1 );
-
-          cv::line(mImage_white, cv::Point(XH,YH),cv::Point(XN,YN),cv::Scalar(R1[i],G1[i],B1[i]),2);
-          cv::line(mImage_white, cv::Point(XN,YN),cv::Point(XT,YT),cv::Scalar(R1[i],G1[i],B1[i]),2);
-          cv::line(mImage_white, cv::Point(XN,YN),cv::Point(XLS,YLS),cv::Scalar(R1[i],G1[i],B1[i]),2);
-          cv::line(mImage_white, cv::Point(XLS,YLS),cv::Point(XLE,YLE),cv::Scalar(R1[i],G1[i],B1[i]),2);
-          cv::line(mImage_white, cv::Point(XLE,YLE),cv::Point(XLH,YLH),cv::Scalar(R1[i],G1[i],B1[i]),2);
-          cv::line(mImage_white, cv::Point(XN,YN),cv::Point(XRS,YRS),cv::Scalar(R1[i],G1[i],B1[i]),2);
-          cv::line(mImage_white, cv::Point(XRS,YRS),cv::Point(XRE,YRE),cv::Scalar(R1[i],G1[i],B1[i]),2);
-          cv::line(mImage_white, cv::Point(XRE,YRE),cv::Point(XRH,YRH),cv::Scalar(R1[i],G1[i],B1[i]),2);
-          cv::line(mImage_white, cv::Point(XT,YT),cv::Point(XRHip,YRHip),cv::Scalar(R1[i],G1[i],B1[i]),2);
-          cv::line(mImage_white, cv::Point(XT,YT),cv::Point(XLHip,YLHip),cv::Scalar(R1[i],G1[i],B1[i]),2);
-          cv::line(mImage_white, cv::Point(XRHip,YRHip),cv::Point(XRK,YRK),cv::Scalar(R1[i],G1[i],B1[i]),2);
-          cv::line(mImage_white, cv::Point(XLHip,YLHip),cv::Point(XLK,YLK),cv::Scalar(R1[i],G1[i],B1[i]),2);
-          cv::line(mImage_white, cv::Point(XRK,YRK),cv::Point(XRF,YRF),cv::Scalar(R1[i],G1[i],B1[i]),2);
-          cv::line(mImage_white, cv::Point(XLK,YLK),cv::Point(XLF,YLF),cv::Scalar(R1[i],G1[i],B1[i]),2);
-          cv::circle(mImage_white, cv::Point(XH,YH), 8.0, cv::Scalar(R1[i],G1[i],B1[i]), -1, 1 );
         }
 
         for (JointMap::iterator it = named_joints.begin(); it != named_joints.end(); ++it)
@@ -696,11 +596,6 @@ private:
     msg_->header.stamp = ros::Time::now();
     imageSKPub_.publish(msg_);
 
-    msg_ = cv_bridge::CvImage(std_msgs::Header(), "rgb8", mImage_white).toImageMsg();
-    msg_->header.frame_id = depth_frame;
-    msg_->header.stamp = ros::Time::now();
-    imageWhitePub_.publish(msg_);
-
   }
 
   /**
@@ -713,11 +608,11 @@ private:
   {
 
     sensor_msgs::CameraInfoPtr info_msg = boost::make_shared<sensor_msgs::CameraInfo>();
-    if (!is_rgb)
-    {
-      depthStream_.start();
-      depthStream_.readFrame(&depthFrame_);
-    }
+    // if (!is_rgb)
+    // {
+    //   depthStream_.start();
+    //   depthStream_.readFrame(&depthFrame_);
+    // }
 
     if (is_rgb)
     {
@@ -788,15 +683,17 @@ private:
   image_transport::Publisher imagePub_;
   /// RGB sk tracks image publisher
   image_transport::Publisher imageSKPub_;
-  image_transport::Publisher imageWhitePub_;
+  // image_transport::Publisher imageWhitePub_;
   cv::Mat mImage;
-  cv::Mat mImage_white;
+  // cv::Mat mImage_white;
   /// Users IDs publisher
   ros::Publisher userPub_;
   /// Point cloud publisher
   ros::Publisher pointCloudPub_;
   /// Image message
   sensor_msgs::ImagePtr msg_;
+
+  sensor_msgs::ImagePtr msg_depth;
   /// Node rate
   ros::Rate* rate_;
   /// Depth image publisher
@@ -808,7 +705,7 @@ private:
   ros::Publisher rgbInfoPub_;
 
   /// Depth Info
-  sensor_msgs::CameraInfo depthInfo_;
+  sensor_msgs::CameraInfoPtr depthInfo_;
   /// Depth info publisher
   ros::Publisher depthInfoPub_;
 
