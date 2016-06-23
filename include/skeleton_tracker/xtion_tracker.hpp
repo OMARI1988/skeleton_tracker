@@ -437,7 +437,7 @@ private:
     float cx = 319.5;
     float cy = 239.5;
 
-    int R1 = 30;
+    int R1 = 31;
     int G1 = 210;
     int B1 = 170;
 
