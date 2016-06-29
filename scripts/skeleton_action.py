@@ -64,7 +64,7 @@ class skeleton_server(object):
                 #self.image_logger.stop = True
                 break
                 # return self._as.set_preempted()
-
+            consented = self.image_logger.consent_ret
             if self.image_logger.request_sent_flag != 1:
                 self.sk_publisher.publish_skeleton()
                 rospy.sleep(0.01)  # wait until something is published
@@ -86,10 +86,13 @@ class skeleton_server(object):
                         self.image_logger.callback(self.skeleton_msg, goal.waypoint)
                         #print "consent: ", self.image_logger.consent_ret
             else:
+                
                 self.reset_ptu()
-
-                if self.image_logger.consent_ret != None:  #if consent is given:
-                    #print "got consent"
+                #print "here: ", self.image_logger.consent_ret 
+                #if self.image_logger.consent_ret != None:  #if consent is given:
+                if consented is not None:
+                    print "got consent: ", self.image_logger.consent_ret
+                    #self.reset_ptu()
                     break
             end = rospy.Time.now()
             #rospy.sleep(0.1)

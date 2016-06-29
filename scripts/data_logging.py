@@ -301,7 +301,7 @@ class SkeletonImageLogger(object):
             self.navClient.wait_for_result()
 
     def consent_ret_callback(self, msg):
-        if self.request_sent_flag == 0: return
+        if self.request_sent_flag != 1: return
         print "got consent ret callback, %s" % msg
         self.consent_ret=msg
         # self.request_sent_flag = 0
