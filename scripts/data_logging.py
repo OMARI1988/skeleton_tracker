@@ -91,7 +91,7 @@ class SkeletonImageLogger(object):
         rospy.Subscriber("/skeleton_data/consent_ret", String, callback=self.consent_ret_callback, queue_size=1)
         rospy.Subscriber('/'+self.camera+'/rgb/image_color', sensor_msgs.msg.Image, callback=self.rgb_callback, queue_size=10)
         rospy.Subscriber('/'+self.camera+'/rgb/sk_tracks', sensor_msgs.msg.Image, callback=self.rgb_sk_callback, queue_size=10)
-        rospy.Subscriber('/'+self.camera+'/rgb/white_sk_tracks', sensor_msgs.msg.Image, callback=self.white_sk_callback, queue_size=10)
+        #rospy.Subscriber('/'+self.camera+'/rgb/white_sk_tracks', sensor_msgs.msg.Image, callback=self.white_sk_callback, queue_size=10)
         rospy.Subscriber('/'+self.camera+'/depth/image' , sensor_msgs.msg.Image, self.depth_callback, queue_size=10)
 
         # gazing action server
@@ -244,14 +244,14 @@ class SkeletonImageLogger(object):
                 #self.gazeClient.send_goal(self.gazegoal)
 
                 # all this should happen given a good number of detections:
-                if self.sk_mapping[self.inc_sk.uuid]['frame'] % 50 == 0:
+                if self.sk_mapping[self.inc_sk.uuid]['frame'] % 100 == 0:
                     print "%s / %d frames logged" % (self.sk_mapping[self.inc_sk.uuid]['frame'], self.after_a_number_of_frames)
 
                 if self.sk_mapping[self.inc_sk.uuid]['frame'] >= self.after_a_number_of_frames and self.request_sent_flag == 0:
                     print "storing the %sth image to mongo for the webserver..." % self.after_a_number_of_frames
                     # Skeleton on white background
-                    query = {"_meta.image_type": "white_sk_image"}
-                    white_sk_to_mongo =  self.msg_store.update(message=self.white_sk_msg, meta={'image_type':"white_sk_image"}, message_query=query, upsert=True)
+                    #query = {"_meta.image_type": "white_sk_image"}
+                    #white_sk_to_mongo =  self.msg_store.update(message=self.white_sk_msg, meta={'image_type':"white_sk_image"}, message_query=query, upsert=True)
                     # Skeleton on rgb background
                     query = {"_meta.image_type": "rgb_sk_image"}
                     rgb_sk_img_to_mongo = self.msg_store.update(message=self.rgb_sk_msg, meta={'image_type':"rgb_sk_image"}, message_query=query, upsert=True)
@@ -301,8 +301,10 @@ class SkeletonImageLogger(object):
             self.navClient.wait_for_result()
 
     def consent_ret_callback(self, msg):
+        print "-> consent ret callback", self.request_sent_flag, msg
         if self.request_sent_flag != 1: return
-        print "got consent ret callback, %s" % msg
+        
+        print "consent given: %s" % msg
         self.consent_ret=msg
         # self.request_sent_flag = 0
         # when the request is returned, go back to previous waypoint
@@ -370,9 +372,9 @@ class SkeletonImageLogger(object):
         self.rgb_sk = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
 
 
-    def white_sk_callback(self, msg1):
-        if self.stop_image_callbacks != 0: return
-        self.white_sk_msg = msg1
+    #def white_sk_callback(self, msg1):
+    #    if self.stop_image_callbacks != 0: return
+    #    self.white_sk_msg = msg1
 
     def depth_callback(self, imgmsg):
         if self._flag_depth == 0:

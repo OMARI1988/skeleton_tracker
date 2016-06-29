@@ -55,8 +55,10 @@ class skeleton_server(object):
         self.sk_publisher.robot_pose_flag = 1
 
         print goal
+        #initialise things
         self.set_ptu_state(goal.waypoint)
         prev_uuid = ""
+        self.skeleton_msg.uuid = ""
 
         #thread = None
         while (end - start).secs < duration.secs:
@@ -84,18 +86,17 @@ class skeleton_server(object):
                         #)
                         #thread.start()
                         self.image_logger.callback(self.skeleton_msg, goal.waypoint)
-                        #print "consent: ", self.image_logger.consent_ret
+
             else:
-                
                 self.reset_ptu()
                 #print "here: ", self.image_logger.consent_ret 
                 #if self.image_logger.consent_ret != None:  #if consent is given:
                 if consented is not None:
-                    print "got consent: ", self.image_logger.consent_ret
+                    print "Consented. Break from action."
                     #self.reset_ptu()
                     break
             end = rospy.Time.now()
-            #rospy.sleep(0.1)
+
 
         #if thread is not None:
         #    thread.join()
@@ -116,7 +117,7 @@ class skeleton_server(object):
         try:
             previous_consent = self.image_logger.consent_ret.data
         except AttributeError:  # if nothinging is returned :(
-            print "no previous consent"
+            print "no consent given"
             previous_consent = "nothing"
 
         self.image_logger.consent_ret = None
@@ -131,9 +132,11 @@ class skeleton_server(object):
                 proxy(req)
                 print "deleted..."
         except rospy.ServiceException:
-            print "deleter service is not running. Cannot delete data."
+            print "deleter service is not running. Moved if consent was given."
             if prev_uuid != "":
                 self.move_consented_data(prev_uuid, previous_consent)
+
+        print "finished action\n"
 
 
     def move_consented_data(self, uuid, consent):
