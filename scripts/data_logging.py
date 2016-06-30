@@ -108,6 +108,8 @@ class SkeletonImageLogger(object):
         
         request_consent = 0
         self.inc_sk = msg
+        # print ">>", msg.uuid
+        
         if str(datetime.datetime.now().date()) != self.date:
             print 'new day!'
             self.date = str(datetime.datetime.now().date())

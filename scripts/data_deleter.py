@@ -21,7 +21,7 @@ def remover_of_images(req):
     dataset_consented_path = os.path.join('/home', getpass.getuser(), 'SkeletonDataset/SafeZone')
     if not os.path.exists(dataset_consented_path):
         os.makedirs(dataset_consented_path)
-    print "\nuuid: %s, consent: %s" % (uuid, consent)
+    print "uuid: %s, consent: %s" % (uuid, consent)
 
     # find the specific recording to keep (either most images or most recent)
     try:
@@ -29,7 +29,7 @@ def remover_of_images(req):
             if uuid in d:
                 specific_recording = d
 
-        print "keep this one:", specific_recording
+        print "this one:", specific_recording
         location = os.path.join(dataset_path, specific_recording)
 
         # if consent == "nothing":
@@ -52,7 +52,7 @@ def remover_of_images(req):
             shutil.rmtree(os.path.join(location, 'depth'))
             # os.remove(os.path.join(location, 'detection.bag'))
 
-        if "nothing" not in consent:
+        if consent is not None:
             print "moving files..."
             new_location = os.path.join(dataset_consented_path, specific_recording)
             os.rename(location, new_location)

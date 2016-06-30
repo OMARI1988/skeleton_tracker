@@ -26,7 +26,7 @@ class skeleton_server(object):
                                                     execute_cb=self.execute_cb, auto_start=False)
         self._as.start()
         self.sk_publisher = SkeletonManager()
-        self.image_logger = SkeletonImageLogger(detection_threshold = 300)
+        self.image_logger = SkeletonImageLogger(detection_threshold = 600)
         self.skeleton_msg = skeleton_message()  #default empty
         self.filepath = os.path.join(roslib.packages.get_pkg_dir("skeleton_tracker"), "config")
         try:
@@ -79,6 +79,7 @@ class skeleton_server(object):
             rospy.logwarn('Exception when trying to manage consent: %s' % e)
         return ret
   
+  
     def signal_start_of_recording(self):
         rospy.wait_for_service('signal_recording_started', timeout=10)
         signal_recording_started = rospy.ServiceProxy('signal_recording_started', Empty)
@@ -86,8 +87,14 @@ class skeleton_server(object):
         signal_recording_started()
 
 
+    def return_to_main_webpage(self):
+        rospy.wait_for_service('return_to_main_webpage', timeout=10)
+        main_webpage_return = rospy.ServiceProxy('return_to_main_webpage', Empty)
+        # tell the webserver to go back to the main page - if no consent was requested
+        main_webpage_return()
+
+
     def execute_cb(self, goal):
-    
         self.signal_start_of_recording()
         duration = goal.duration
         start = rospy.Time.now()
@@ -103,20 +110,25 @@ class skeleton_server(object):
 
         consent_msg = None
         request_consent = 0
+        first_time = 1
         
         while (end - start).secs < duration.secs:
             if self._as.is_preempt_requested():
                  break
-                
+
+            skel_msg = self.skeleton_msg
             if consent_msg is None and request_consent is 0:
                 self.sk_publisher.publish_skeleton()
-                # rospy.sleep(0.01)  # wait until something is published
+                if first_time:
+                    rospy.sleep(0.1)  # wait until something is published
+                    first_time = 0
 
                 #when a skeleton incremental msg is received
-                if self.skeleton_msg.uuid != "":
-                    prev_uuid = self.skeleton_msg.uuid
+                if skel_msg.uuid is not "":
+                    # print ">", skel_msg.uuid
+                    prev_uuid = skel_msg.uuid
                     self.sk_publisher.logged_uuid = prev_uuid
-                    request_consent = self.image_logger.callback(self.skeleton_msg, goal.waypoint)
+                    request_consent = self.image_logger.callback(skel_msg, goal.waypoint)
             
             elif consent_msg is not None:
                 print "breaking loop"
@@ -128,12 +140,14 @@ class skeleton_server(object):
                 #call a simple actionlib server 
                 consent_msg = self.consent_client()
                 print "consent returned: %s" % consent_msg
-			    
-			   
             end = rospy.Time.now()
 
         # after the action reset ptu and stop publisher
         self.reset_all()
+        
+        # if no skeleton was recorded for the threshold
+        if request_consent is 0:
+            self.return_to_main_webpage()
 		
         # try:
         #     self.image_logger.bag_file.close()
@@ -142,16 +156,12 @@ class skeleton_server(object):
 
         if self._as.is_preempt_requested():
             print "The action is being preempted, cancelling everything. \n"
+            self.return_to_main_webpage()
             return self._as.set_preempted()
-        # try:
-        #     previous_consent = self.image_logger.consent_ret.data
-        # except AttributeError:  # if nothinging is returned :(
-        #     print "no consent given"
-        #     previous_consent = "nothing"
-
         self._as.set_succeeded(skeletonActionResult())
 
-        print "call deleter with: %s " % consent_msg
+        if prev_uuid is not "":
+            print "call deleter with: %s on %s" % (consent_msg, prev_uuid)
         
         try:
             proxy = rospy.ServiceProxy("/delete_images_service", DeleteImages)
