@@ -88,6 +88,7 @@ class SkeletonImageLogger(object):
         rospy.Subscriber("/robot_pose", Pose, callback=self.robot_callback, queue_size=10)
         # rospy.Subscriber('skeleton_data/incremental', skeleton_message,callback=self.incremental_callback, queue_size = 10)
         rospy.Subscriber('skeleton_data/complete', skeleton_complete,callback=self.complete_callback, queue_size = 10)
+        
         rospy.Subscriber("/skeleton_data/consent_ret", String, callback=self.consent_ret_callback, queue_size=1)
         rospy.Subscriber('/'+self.camera+'/rgb/image_color', sensor_msgs.msg.Image, callback=self.rgb_callback, queue_size=10)
         rospy.Subscriber('/'+self.camera+'/rgb/sk_tracks', sensor_msgs.msg.Image, callback=self.rgb_sk_callback, queue_size=10)
@@ -112,7 +113,7 @@ class SkeletonImageLogger(object):
 
 
     def callback(self, msg, waypoint):
-
+        
         self.inc_sk = msg
         if str(datetime.datetime.now().date()) != self.date:
             print 'new day!'
@@ -260,7 +261,7 @@ class SkeletonImageLogger(object):
                     depth_img_to_mongo = self.msg_store.update(message=self.depth_msg, meta={'image_type':"depth_image"}, message_query=query, upsert=True)
 
                     consent_msg = "Check_consent_%s" % (t)
-                    print consent_msg
+                    #print consent_msg
                     # I think this should be a service call - so it definetly returns a value.
                     self.request_sent_flag = 1
                     # move and speak: (if no target waypoint, go to original waypoint)
@@ -303,8 +304,7 @@ class SkeletonImageLogger(object):
     def consent_ret_callback(self, msg):
         print "-> consent ret callback", self.request_sent_flag, msg
         if self.request_sent_flag != 1: return
-        
-        print "consent given: %s" % msg
+        #print "consent given: %s" % msg
         self.consent_ret=msg
         # self.request_sent_flag = 0
         # when the request is returned, go back to previous waypoint

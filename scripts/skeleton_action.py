@@ -59,6 +59,9 @@ class skeleton_server(object):
         self.set_ptu_state(goal.waypoint)
         prev_uuid = ""
         self.skeleton_msg.uuid = ""
+        self.image_logger.request_sent_flag = 0
+        self.image_logger.consent_ret = None
+        self.image_logger.consent_subscriber = rospy.Subscriber("/skeleton_data/consent_ret", String, callback=self.image_logger.consent_ret_callback, queue_size=1)
 
         #thread = None
         while (end - start).secs < duration.secs:
@@ -66,6 +69,8 @@ class skeleton_server(object):
                 #self.image_logger.stop = True
                 break
                 # return self._as.set_preempted()
+                
+            #print self.image_logger.consent_ret
             consented = self.image_logger.consent_ret
             if self.image_logger.request_sent_flag != 1:
                 self.sk_publisher.publish_skeleton()
@@ -79,13 +84,12 @@ class skeleton_server(object):
                     self.sk_publisher.logged_uuid = prev_uuid
 
                     if self.image_logger.request_sent_flag != 1:
-
+                        self.image_logger.callback(self.skeleton_msg, goal.waypoint)
                         #thread = threading.Thread(
                         #    target=self.image_logger.callback,
                         #    args=(self.skeleton_msg, goal.waypoint,)
                         #)
                         #thread.start()
-                        self.image_logger.callback(self.skeleton_msg, goal.waypoint)
 
             else:
                 self.reset_ptu()
@@ -102,9 +106,9 @@ class skeleton_server(object):
         #    thread.join()
 
         # after the action reset everything
-        self.image_logger.request_sent_flag = 0
         self.reset_all()
-
+        self.image_logger.consent_subscriber.unregister()
+		
         try:
             self.image_logger.bag_file.close()
         except AttributeError:
