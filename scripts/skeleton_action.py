@@ -52,9 +52,10 @@ class skeleton_server(object):
             if consent_client.wait_for_server(timeout=rospy.Duration(10)):
                 goal = ManageConsentGoal()
                 consent_client.send_goal(goal)
-    
+                
                 # here you should check whether you've been preempted, shutdown etc. while waiting for consent
-                while True:
+                while not self._as.is_preempt_requested():
+
                     if consent_client.wait_for_result(timeout = rospy.Duration(1)):
                         result = consent_client.get_result()
                         int_result = result.result.result
@@ -70,6 +71,8 @@ class skeleton_server(object):
                             # print 'no consent'
                             ret = "nothing"
                         break
+                if self._as.is_preempt_requested():
+                    consent_client.cancel_all_goals()
             else:
                 rospy.logwarn('No manage consent server')
         except Exception, e:
