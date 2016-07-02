@@ -116,7 +116,10 @@ class skeleton_server(object):
             if self._as.is_preempt_requested():
                  break
 
+            #Make sure that the message changes before calling the logger.
             skel_msg = self.skeleton_msg
+            self.skeleton_msg = None
+
             if consent_msg is None and request_consent is 0:
                 self.sk_publisher.publish_skeleton()
                 if first_time:
@@ -129,17 +132,19 @@ class skeleton_server(object):
                     prev_uuid = skel_msg.uuid
                     self.sk_publisher.logged_uuid = prev_uuid
                     request_consent = self.image_logger.callback(skel_msg, goal.waypoint)
-            
+
             elif consent_msg is not None:
                 print "breaking loop"
                 break
                 
             elif request_consent is 1:
-            	self.reset_ptu()
+                self.reset_ptu()
                 print "Consent requested."
                 #call a simple actionlib server 
                 consent_msg = self.consent_client()
                 print "consent returned: %s" % consent_msg
+
+            skel_msg.uuid = ""
             end = rospy.Time.now()
 
         # after the action reset ptu and stop publisher
