@@ -26,7 +26,7 @@ class skeleton_server(object):
                                                     execute_cb=self.execute_cb, auto_start=False)
         self._as.start()
         self.sk_publisher = SkeletonManager()
-        self.image_logger = SkeletonImageLogger(detection_threshold = 600)
+        self.image_logger = SkeletonImageLogger(detection_threshold = 300)
         self.skeleton_msg = skeleton_message()  #default empty
         self.filepath = os.path.join(roslib.packages.get_pkg_dir("skeleton_tracker"), "config")
         try:
@@ -105,7 +105,7 @@ class skeleton_server(object):
 
         print goal
         self.set_ptu_state(goal.waypoint)
-        prev_uuid = ""
+        #prev_uuid = ""
         self.skeleton_msg.uuid = ""
 
         consent_msg = None
@@ -118,7 +118,7 @@ class skeleton_server(object):
 
             #Make sure that the message changes before calling the logger.
             skel_msg = self.skeleton_msg
-            self.skeleton_msg = None
+            self.skeleton_msg = skeleton_message() #clear / default msg
 
             if consent_msg is None and request_consent is 0:
                 self.sk_publisher.publish_skeleton()
@@ -128,9 +128,8 @@ class skeleton_server(object):
 
                 #when a skeleton incremental msg is received
                 if skel_msg.uuid is not "":
-                    # print ">", skel_msg.uuid
-                    prev_uuid = skel_msg.uuid
-                    self.sk_publisher.logged_uuid = prev_uuid
+                    #prev_uuid = skel_msg.uuid
+                    #self.sk_publisher.logged_uuid = prev_uuid
                     request_consent = self.image_logger.callback(skel_msg, goal.waypoint)
 
             elif consent_msg is not None:
@@ -165,19 +164,20 @@ class skeleton_server(object):
             return self._as.set_preempted()
         self._as.set_succeeded(skeletonActionResult())
 
-        if prev_uuid is not "":
-            print "call deleter with: %s on %s" % (consent_msg, prev_uuid)
+        if skel_msg.uuid is not "":
+            print "call deleter with: %s on %s" % (consent_msg, skel_msg.uuid)
         
         try:
             proxy = rospy.ServiceProxy("/delete_images_service", DeleteImages)
-            if prev_uuid != "":
-                req = DeleteImagesRequest(str(end), prev_uuid, str(consent_msg))
+            if skel_msg.uuid != "":
+                req = DeleteImagesRequest(str(end), skel_msg.uuid, str(consent_msg))
                 proxy(req)
                 print "deleted..."
         except rospy.ServiceException:
             print "deleter service is not running. Moved if consent was given."
-            if prev_uuid != "":
-                self.move_consented_data(prev_uuid, consent_msg)
+            #if prev_uuid != "":
+            #self.move_consented_data(prev_uuid, consent_msg)
+            self.move_consented_data(skel_msg.uuid, consent_msg)
 
         print "finished action\n"
 
@@ -199,7 +199,7 @@ class skeleton_server(object):
                         new_location = os.path.join(dataset_consented_path, d)
                         os.rename(location, new_location)
         except:
-            rospy.logerr("File(s) or directory(ies) can not be found!")
+            rospy.logerr("File(s) or directory(ies) not be found - not moved: %s: %s" % uuid, dataset_consented_path)
 
 
     def reset_all(self):
@@ -215,6 +215,7 @@ class skeleton_server(object):
 
 
     def incremental_callback(self, msg):
+    	# print ">", msg.uuid  # doesnt receive empty messages anymore
         self.skeleton_msg = msg
 
     def reset_ptu(self):

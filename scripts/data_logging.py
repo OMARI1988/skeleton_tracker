@@ -237,7 +237,7 @@ class SkeletonImageLogger(object):
 
                 # all this should happen given a good number of detections:
                 if self.sk_mapping[self.inc_sk.uuid]['frame'] % 100 == 0:
-                    print "%s / %d frames logged" % (self.sk_mapping[self.inc_sk.uuid]['frame'], self.after_a_number_of_frames)
+                    print "   %s / %d frames logged: %s" % (self.sk_mapping[self.inc_sk.uuid]['frame'], self.after_a_number_of_frames, self.inc_sk.uuid)
 
                 if self.sk_mapping[self.inc_sk.uuid]['frame'] >= self.after_a_number_of_frames:
                     print "storing the %sth image to mongo for the webserver..." % self.after_a_number_of_frames
