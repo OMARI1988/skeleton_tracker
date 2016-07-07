@@ -105,7 +105,7 @@ class skeleton_server(object):
 
         print goal
         self.set_ptu_state(goal.waypoint)
-        #prev_uuid = ""
+        consented_uuid = ""
         self.skeleton_msg.uuid = ""
 
         consent_msg = None
@@ -134,6 +134,7 @@ class skeleton_server(object):
 
             elif consent_msg is not None:
                 print "breaking loop"
+                consented_uuid = skel_msg.uuid
                 break
                 
             elif request_consent is 1:
@@ -142,7 +143,7 @@ class skeleton_server(object):
                 #call a simple actionlib server 
                 consent_msg = self.consent_client()
                 print "consent returned: %s" % consent_msg
-
+                consented_uuid = skel_msg.uuid
             skel_msg.uuid = ""
             end = rospy.Time.now()
 
@@ -164,20 +165,20 @@ class skeleton_server(object):
             return self._as.set_preempted()
         self._as.set_succeeded(skeletonActionResult())
 
-        if skel_msg.uuid is not "":
+        if consented_uuid is not "":
             print "call deleter with: %s on %s" % (consent_msg, skel_msg.uuid)
         
         try:
             proxy = rospy.ServiceProxy("/delete_images_service", DeleteImages)
-            if skel_msg.uuid != "":
-                req = DeleteImagesRequest(str(end), skel_msg.uuid, str(consent_msg))
+            if consented_uuid != "":
+                req = DeleteImagesRequest(str(end), consented_uuid, str(consent_msg))
                 proxy(req)
                 print "deleted..."
         except rospy.ServiceException:
             print "deleter service is not running. Moved if consent was given."
-            #if prev_uuid != "":
-            #self.move_consented_data(prev_uuid, consent_msg)
-            self.move_consented_data(skel_msg.uuid, consent_msg)
+            #if consented_uuid != "":
+            self.move_consented_data(consented__uuid, consent_msg)
+            #self.move_consented_data(skel_msg.uuid, consent_msg)
 
         print "finished action\n"
 

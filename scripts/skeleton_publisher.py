@@ -50,7 +50,7 @@ class SkeletonManager(object):
         # only publish the skeleton data when the person is far enough away (distance threshold)
         # maximum number of frames for one detection (not used when restricting the logger)
         self.frame_thresh = 5000
-        self.dist_thresh = 2.0
+        self.dist_thresh = 1.0
         self.dist_flag = 1
 
         # initialise mongodb client
