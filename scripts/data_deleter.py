@@ -52,7 +52,7 @@ def remover_of_images(req):
             shutil.rmtree(os.path.join(location, 'depth'))
             # os.remove(os.path.join(location, 'detection.bag'))
 
-        if consent is not None:
+        if "nothing" not in consent:
             print "moving files..."
             new_location = os.path.join(dataset_consented_path, specific_recording)
             os.rename(location, new_location)

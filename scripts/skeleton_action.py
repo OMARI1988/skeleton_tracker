@@ -131,19 +131,16 @@ class skeleton_server(object):
                     #prev_uuid = skel_msg.uuid
                     #self.sk_publisher.logged_uuid = prev_uuid
                     request_consent = self.image_logger.callback(skel_msg, goal.waypoint)
-
-            elif consent_msg is not None:
-                print "breaking loop"
-                consented_uuid = skel_msg.uuid
-                break
+                    if request_consent:
+                        consented_uuid = skel_msg.uuid
                 
             elif request_consent is 1:
                 self.reset_ptu()
-                print "Consent requested."
-                #call a simple actionlib server 
+                print "Consent requested: %s" % consented_uuid
                 consent_msg = self.consent_client()
-                print "consent returned: %s" % consent_msg
-                consented_uuid = skel_msg.uuid
+                print "consent returned: %s: %s" % (consent_msg, consented_uuid)
+                break 
+				
             skel_msg.uuid = ""
             end = rospy.Time.now()
 
@@ -165,9 +162,6 @@ class skeleton_server(object):
             return self._as.set_preempted()
         self._as.set_succeeded(skeletonActionResult())
 
-        if consented_uuid is not "":
-            print "call deleter with: %s on %s" % (consent_msg, skel_msg.uuid)
-        
         try:
             proxy = rospy.ServiceProxy("/delete_images_service", DeleteImages)
             if consented_uuid != "":
