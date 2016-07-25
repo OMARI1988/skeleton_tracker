@@ -44,9 +44,11 @@ class skeleton_server(object):
         # self.publish_rec.publish("init")
 
 
-    def consent_client(self):
+    def consent_client(self, duration):
         rospy.loginfo("Creating consent client")
         ret = None
+        start = rospy.Time.now()
+        end = rospy.Time.now()
         try:
             consent_client = actionlib.SimpleActionClient('manage_consent', ManageConsentAction)
             if consent_client.wait_for_server(timeout=rospy.Duration(10)):
@@ -54,7 +56,7 @@ class skeleton_server(object):
                 consent_client.send_goal(goal)
                 
                 # here you should check whether you've been preempted, shutdown etc. while waiting for consent
-                while not self._as.is_preempt_requested():
+                while not self._as.is_preempt_requested() and (end - start).secs < duration:
 
                     if consent_client.wait_for_result(timeout = rospy.Duration(1)):
                         result = consent_client.get_result()
@@ -71,6 +73,11 @@ class skeleton_server(object):
                             # print 'no consent'
                             ret = "nothing"
                         break
+                    end = rospy.Time.now()
+                    
+                if (end - start).secs >= duration:
+                    print "timed out"
+                
                 if self._as.is_preempt_requested():
                     consent_client.cancel_all_goals()
             else:
@@ -131,20 +138,29 @@ class skeleton_server(object):
                     #prev_uuid = skel_msg.uuid
                     #self.sk_publisher.logged_uuid = prev_uuid
                     request_consent = self.image_logger.callback(skel_msg, goal.waypoint)
-                    if request_consent:
+                    if request_consent is 1:
                         consented_uuid = skel_msg.uuid
-                
+                        
+            elif consent_msg is not None:
+                print "breaking loop for: %s" % consented_uuid
+                break
+
             elif request_consent is 1:
                 self.reset_ptu()
                 print "Consent requested: %s" % consented_uuid
-                consent_msg = self.consent_client()
+                new_duration = duration.secs - (end - start).secs
+                #print "dur:", new_duration, type(new_duration), start.secs, end.secs, duration.secs
+                consent_msg = self.consent_client(new_duration)
                 print "consent returned: %s: %s" % (consent_msg, consented_uuid)
-                break 
-				
+
             skel_msg.uuid = ""
             end = rospy.Time.now()
 
         # after the action reset ptu and stop publisher
+        print "exited loop"
+        if consent_msg is None:
+            consent_msg = "nothing"
+            
         self.reset_all()
         
         # if no skeleton was recorded for the threshold
