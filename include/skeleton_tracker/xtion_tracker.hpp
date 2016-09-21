@@ -368,29 +368,25 @@ private:
       std::string uuid = generateUUID(now_str, state_msg.userID);
       if (int(user.getId())==1)
         uuid1 = uuid;
-      if (int(user.getId())==2)
+      else if (int(user.getId())==2)
         uuid2 = uuid;
-      if (int(user.getId())==3)
+      else if (int(user.getId())==3)
         uuid3 = uuid;
-      if (int(user.getId())==4)
+      else if (int(user.getId())==4)
         uuid4 = uuid;
-      if (int(user.getId())==5)
+      else if (int(user.getId())==5)
         uuid5 = uuid;
-      if (int(user.getId())==6)
+      else if (int(user.getId())==6)
         uuid6 = uuid;
-      if (int(user.getId())==7)
+      else if (int(user.getId())==7)
         uuid7 = uuid;
-      if (int(user.getId())==8)
+      else if (int(user.getId())==8)
         uuid8 = uuid;
-      if (int(user.getId())==9)
+      else if (int(user.getId())==9)
         uuid9 = uuid;
-      if (int(user.getId())==10)
+      else if (int(user.getId())==10)
         uuid10 = uuid;
-    std::cout << "uuid1: " << uuid1 << std::endl;
-    std::cout << "uuid2: " << uuid2 << std::endl;
-    std::cout << "uuid3: " << uuid3 << std::endl;
-    std::cout << "uuid4: " << uuid4 << std::endl;
-    std::cout << "uuid5: " << uuid5 << std::endl;
+      std::cout << "uuid" << int(user.getId()) <<": " << uuid << std::endl;
     }
     else if (user.isVisible() && !g_visibleUsers_[user.getId()])
       USER_MESSAGE("Visible")
@@ -402,27 +398,24 @@ private:
 
     if (int(user.getId())==1)
       state_msg.uuid = uuid1;
-    if (int(user.getId())==2)
+    else if (int(user.getId())==2)
       state_msg.uuid = uuid2;
-    if (int(user.getId())==3)
+    else if (int(user.getId())==3)
       state_msg.uuid = uuid3;
-    if (int(user.getId())==4)
+    else if (int(user.getId())==4)
       state_msg.uuid = uuid4;
-    if (int(user.getId())==5)
+    else if (int(user.getId())==5)
       state_msg.uuid = uuid5;
-    if (int(user.getId())==6)
+    else if (int(user.getId())==6)
       state_msg.uuid = uuid6;
-    if (int(user.getId())==7)
+    else if (int(user.getId())==7)
       state_msg.uuid = uuid7;
-    if (int(user.getId())==8)
+    else if (int(user.getId())==8)
       state_msg.uuid = uuid8;
-    if (int(user.getId())==9)
+    else if (int(user.getId())==9)
       state_msg.uuid = uuid9;
-    if (int(user.getId())==10)
+    else if (int(user.getId())==10)
       state_msg.uuid = uuid10;
-
-
-
 
     g_visibleUsers_[user.getId()] = user.isVisible();
 
@@ -540,99 +533,116 @@ private:
         p.position.x = named_j[joint_name].getPosition().x/1000; p.position.y = named_j[joint_name].getPosition().y/1000; p.position.z = named_j[joint_name].getPosition().z/1000;
         head_msg.name = joint_name;
         head_msg.pose = p;
+        head_msg.confidence = named_j[joint_name].getPositionConfidence();
         // creating neck joint message
         joint_name="neck";
         p.position.x = named_j[joint_name].getPosition().x/1000; p.position.y = named_j[joint_name].getPosition().y/1000; p.position.z = named_j[joint_name].getPosition().z/1000;
         neck_msg.name = joint_name;
         neck_msg.pose = p;
+        neck_msg.confidence = named_j[joint_name].getPositionConfidence();
         // creating toros joint message
         joint_name="torso";
         p.position.x = named_j[joint_name].getPosition().x/1000; p.position.y = named_j[joint_name].getPosition().y/1000; p.position.z = named_j[joint_name].getPosition().z/1000;
         torso_msg.name = joint_name;
         torso_msg.pose = p;
+        torso_msg.confidence = named_j[joint_name].getPositionConfidence();
         // creating right hand joint message
         joint_name="right_hand";
         p.position.x = named_j[joint_name].getPosition().x/1000; p.position.y = named_j[joint_name].getPosition().y/1000; p.position.z = named_j[joint_name].getPosition().z/1000;
         right_hand_msg.name = joint_name;
         right_hand_msg.pose = p;
+        right_hand_msg.confidence = named_j[joint_name].getPositionConfidence();
         // creating right elbow joint message
         joint_name="right_elbow";
         p.position.x = named_j[joint_name].getPosition().x/1000; p.position.y = named_j[joint_name].getPosition().y/1000; p.position.z = named_j[joint_name].getPosition().z/1000;
         right_elbow_msg.name = joint_name;
         right_elbow_msg.pose = p;
+        right_elbow_msg.confidence = named_j[joint_name].getPositionConfidence();
         // creating right shoulder joint message
         joint_name="right_shoulder";
         p.position.x = named_j[joint_name].getPosition().x/1000; p.position.y = named_j[joint_name].getPosition().y/1000; p.position.z = named_j[joint_name].getPosition().z/1000;
         right_shoulder_msg.name = joint_name;
         right_shoulder_msg.pose = p;
+        right_shoulder_msg.confidence = named_j[joint_name].getPositionConfidence();
         // creating right hip joint message
         joint_name="right_hip";
         p.position.x = named_j[joint_name].getPosition().x/1000; p.position.y = named_j[joint_name].getPosition().y/1000; p.position.z = named_j[joint_name].getPosition().z/1000;
         right_hip_msg.name = joint_name;
         right_hip_msg.pose = p;
+        right_hip_msg.confidence = named_j[joint_name].getPositionConfidence();
         // creating right knee joint message
         joint_name="right_knee";
         p.position.x = named_j[joint_name].getPosition().x/1000; p.position.y = named_j[joint_name].getPosition().y/1000; p.position.z = named_j[joint_name].getPosition().z/1000;
         right_knee_msg.name = joint_name;
         right_knee_msg.pose = p;
+        right_knee_msg.confidence = named_j[joint_name].getPositionConfidence();
         // creating right foot joint message
         joint_name="right_foot";
         p.position.x = named_j[joint_name].getPosition().x/1000; p.position.y = named_j[joint_name].getPosition().y/1000; p.position.z = named_j[joint_name].getPosition().z/1000;
         right_foot_msg.name = joint_name;
         right_foot_msg.pose = p;
+        right_foot_msg.confidence = named_j[joint_name].getPositionConfidence();
 
         // creating left hand joint message
         joint_name="left_hand";
         p.position.x = named_j[joint_name].getPosition().x/1000; p.position.y = named_j[joint_name].getPosition().y/1000; p.position.z = named_j[joint_name].getPosition().z/1000;
         left_hand_msg.name = joint_name;
         left_hand_msg.pose = p;
+        left_hand_msg.confidence = named_j[joint_name].getPositionConfidence();
         // creating left elbow joint message
         joint_name="left_elbow";
         p.position.x = named_j[joint_name].getPosition().x/1000; p.position.y = named_j[joint_name].getPosition().y/1000; p.position.z = named_j[joint_name].getPosition().z/1000;
         left_elbow_msg.name = joint_name;
         left_elbow_msg.pose = p;
+        left_elbow_msg.confidence = named_j[joint_name].getPositionConfidence();
         // creating left shoulder joint message
         joint_name="left_shoulder";
         p.position.x = named_j[joint_name].getPosition().x/1000; p.position.y = named_j[joint_name].getPosition().y/1000; p.position.z = named_j[joint_name].getPosition().z/1000;
         left_shoulder_msg.name = joint_name;
         left_shoulder_msg.pose = p;
+        left_shoulder_msg.confidence = named_j[joint_name].getPositionConfidence();
         // creating left hip joint message
         joint_name="left_hip";
         p.position.x = named_j[joint_name].getPosition().x/1000; p.position.y = named_j[joint_name].getPosition().y/1000; p.position.z = named_j[joint_name].getPosition().z/1000;
         left_hip_msg.name = joint_name;
         left_hip_msg.pose = p;
+        left_hip_msg.confidence = named_j[joint_name].getPositionConfidence();
         // creating left knee joint message
         joint_name="left_knee";
         p.position.x = named_j[joint_name].getPosition().x/1000; p.position.y = named_j[joint_name].getPosition().y/1000; p.position.z = named_j[joint_name].getPosition().z/1000;
         left_knee_msg.name = joint_name;
         left_knee_msg.pose = p;
+        left_knee_msg.confidence = named_j[joint_name].getPositionConfidence();
         // creating left foot joint message
         joint_name="left_foot";
         p.position.x = named_j[joint_name].getPosition().x/1000; p.position.y = named_j[joint_name].getPosition().y/1000; p.position.z = named_j[joint_name].getPosition().z/1000;
         left_foot_msg.name = joint_name;
         left_foot_msg.pose = p;
+        left_foot_msg.confidence = named_j[joint_name].getPositionConfidence();
 
-        incremental_msg.userID = i;
-        if (i==1)
+        incremental_msg.userID = int(user.getId());
+        if (int(user.getId())==1)
           incremental_msg.uuid = uuid1;
-        else if (i==2)
+        else if (int(user.getId())==2)
           incremental_msg.uuid = uuid2;
-        else if (i==3)
+        else if (int(user.getId())==3)
           incremental_msg.uuid = uuid3;
-        else if (i==4)
+        else if (int(user.getId())==4)
           incremental_msg.uuid = uuid4;
-        else if (i==5)
+        else if (int(user.getId())==5)
           incremental_msg.uuid = uuid5;
-        else if (i==6)
+        else if (int(user.getId())==6)
           incremental_msg.uuid = uuid6;
-        else if (i==7)
+        else if (int(user.getId())==7)
           incremental_msg.uuid = uuid7;
-        else if (i==8)
+        else if (int(user.getId())==8)
           incremental_msg.uuid = uuid8;
-        else if (i==9)
+        else if (int(user.getId())==9)
           incremental_msg.uuid = uuid9;
-        else if (i==10)
+        else if (int(user.getId())==10)
           incremental_msg.uuid = uuid10;
+
+        incremental_msg.joints.clear();
         incremental_msg.joints.push_back(head_msg);
         incremental_msg.joints.push_back(neck_msg);
         incremental_msg.joints.push_back(torso_msg);
