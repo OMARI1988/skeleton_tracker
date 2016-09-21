@@ -29,7 +29,7 @@ class SkeletonImageLogger(object):
     """
 
     def __init__(self, detection_threshold = 1000, camera='head_xtion', database='message_store', collection='consent_images'):
-        #self.stop = False
+        
         self.nav_goal_waypoint = None
         self.camera = camera
         self.baseFrame = '/'+self.camera+'_depth_optical_frame'
@@ -39,10 +39,8 @@ class SkeletonImageLogger(object):
 
         # directory to store the data
         self.date = str(datetime.datetime.now().date())
-        # self.dir1 = '/home/lucie02/Datasets/Lucie/'+self.date+'/'
 
         self.dir1 = '/home/' + getpass.getuser() + '/SkeletonDataset/pre_consent/' + self.date+'/'
-        #print 'checking if folder exists:', self.dir1
         if not os.path.exists(self.dir1):
             print '  -create folder:',self.dir1
             os.makedirs(self.dir1)
@@ -66,9 +64,7 @@ class SkeletonImageLogger(object):
         self._flag_rgb = 0
         self._flag_rgb_sk = 0
         self._flag_depth = 0
-        self.request_sent_flag = 0
         self.after_a_number_of_frames = detection_threshold
-        self.consent_ret = None
         self.stop_image_callbacks = 1
 
         # opencv stuff
@@ -78,20 +74,17 @@ class SkeletonImageLogger(object):
         self.msg_store = MessageStoreProxy(collection=collection, database=database)
 
         # publishers
-        self.publish_consent_req = rospy.Publisher('skeleton_data/consent_req', String, queue_size = 10)
-        self.publish_consent_req.publish("init")
+        # self.publish_consent_req = rospy.Publisher('skeleton_data/consent_req', String, queue_size = 10)
+        # self.publish_consent_req.publish("init")
         self.publish_consent_pose = rospy.Publisher('skeleton_data/consent_pose', PoseStamped, queue_size = 10, latch=True)
 
         # listeners
-        # rospy.Subscriber("/current_node", String, callback=self.curr_node_callback, queue_size=1)
-        # rospy.Subscriber("/closest_node", String, callback=self.close_node_callback, queue_size=1)
         rospy.Subscriber("/robot_pose", Pose, callback=self.robot_callback, queue_size=10)
-        # rospy.Subscriber('skeleton_data/incremental', skeleton_message,callback=self.incremental_callback, queue_size = 10)
-        rospy.Subscriber('skeleton_data/complete', skeleton_complete,callback=self.complete_callback, queue_size = 10)
-        rospy.Subscriber("/skeleton_data/consent_ret", String, callback=self.consent_ret_callback, queue_size=1)
+        rospy.Subscriber('skeleton_data/complete', skeleton_complete, callback=self.complete_callback, queue_size = 10)
+        
+        # rospy.Subscriber("/skeleton_data/consent_ret", String, callback=self.consent_ret_callback, queue_size=1)
         rospy.Subscriber('/'+self.camera+'/rgb/image_color', sensor_msgs.msg.Image, callback=self.rgb_callback, queue_size=10)
         rospy.Subscriber('/'+self.camera+'/rgb/sk_tracks', sensor_msgs.msg.Image, callback=self.rgb_sk_callback, queue_size=10)
-        rospy.Subscriber('/'+self.camera+'/rgb/white_sk_tracks', sensor_msgs.msg.Image, callback=self.white_sk_callback, queue_size=10)
         rospy.Subscriber('/'+self.camera+'/depth/image' , sensor_msgs.msg.Image, self.depth_callback, queue_size=10)
 
         # gazing action server
@@ -112,8 +105,11 @@ class SkeletonImageLogger(object):
 
 
     def callback(self, msg, waypoint):
-
+        
+        request_consent = 0
         self.inc_sk = msg
+        # print ">>", msg.uuid
+        
         if str(datetime.datetime.now().date()) != self.date:
             print 'new day!'
             self.date = str(datetime.datetime.now().date())
@@ -124,16 +120,14 @@ class SkeletonImageLogger(object):
                 os.makedirs(self.dir1)
 
         if self._flag_robot and self._flag_rgb and self._flag_rgb_sk and not self.stop_image_callbacks:
-
             if self.inc_sk.uuid not in self.sk_mapping:
                 self.sk_mapping[self.inc_sk.uuid] = {}
                 self.sk_mapping[self.inc_sk.uuid]['frame'] = 1
                 self.sk_mapping[self.inc_sk.uuid]['time'] = str(datetime.datetime.now().time()).split('.')[0]+'_'
                 t = self.sk_mapping[self.inc_sk.uuid]['time']
                 print '  -new skeleton detected with id:', self.inc_sk.uuid
-                # print '  -creating folder:',t+self.inc_sk.uuid
                 new_dir = self.dir1+self.date+'_'+t+self.inc_sk.uuid+'_'+waypoint
-                print "new", new_dir
+                # print "new", new_dir
 
                 if not os.path.exists(new_dir):
                     os.makedirs(new_dir)
@@ -144,7 +138,7 @@ class SkeletonImageLogger(object):
                     os.makedirs(new_dir+'/skeleton')
 
                     # create the empty bag file (closed in /skeleton_action)
-                    self.bag_file = rosbag.Bag(new_dir+'/detection.bag', 'w')
+                    # self.bag_file = rosbag.Bag(new_dir+'/detection.bag', 'w')
 
             t = self.sk_mapping[self.inc_sk.uuid]['time']
             new_dir = self.dir1+self.date+'_'+t+self.inc_sk.uuid+'_'+waypoint
@@ -164,12 +158,12 @@ class SkeletonImageLogger(object):
                 cv2.imwrite(d+'depth/depth_'+f_str+'.jpg', self.xtion_img_d_rgb)
                 cv2.imwrite(d+'rgb_sk/sk_'+f_str+'.jpg', self.rgb_sk)
 
-                try:
-                    self.bag_file.write('rgb', self.rgb_msg)
-                    self.bag_file.write('depth', self.depth_msg)
-                    self.bag_file.write('rgb_sk', self.rgb_sk_msg)
-                except:
-                    rospy.logwarn("Can not write rgb, depth, and rgb_sk to a bag file.")
+                # try:
+                #     self.bag_file.write('rgb', self.rgb_msg)
+                #     self.bag_file.write('depth', self.depth_msg)
+                #     self.bag_file.write('rgb_sk', self.rgb_sk_msg)
+                # except:
+                #     rospy.logwarn("Can not write rgb, depth, and rgb_sk to a bag file.")
 
                 # save robot_pose in bag file
                 x=float(self.robot_pose.position.x)
@@ -183,10 +177,10 @@ class SkeletonImageLogger(object):
                 q = Quaternion(xo, yo, zo, wo)
                 robot = Pose(p,q)
 
-                try:
-                    self.bag_file.write('robot', robot)
-                except:
-                    rospy.logwarn("cannot write the robot position to bag. Has the bag been closed already?")
+                # try:
+                #     self.bag_file.write('robot', robot)
+                # except:
+                #    rospy.logwarn("cannot write the robot position to bag. Has the bag been closed already?")
 
                 # save robot_pose in text file
                 f1 = open(d+'robot/robot_'+f_str+'.txt','w')
@@ -214,10 +208,8 @@ class SkeletonImageLogger(object):
                 #skel = Pose(p,q)
                 #bag.write('skeleton', skel)
 
-
                 # save skeleton datain text file
                 f1 = open(d+'skeleton/skl_'+f_str+'.txt','w')
-                # print self.inc_sk.joints[0]
                 f1.write('time:'+str(self.inc_sk.joints[0].time.secs)+'.'+str(self.inc_sk.joints[0].time.nsecs)+'\n')
                 for i in self.inc_sk.joints:
                     f1.write(i.name+'\n')
@@ -244,29 +236,24 @@ class SkeletonImageLogger(object):
                 #self.gazeClient.send_goal(self.gazegoal)
 
                 # all this should happen given a good number of detections:
-                if self.sk_mapping[self.inc_sk.uuid]['frame'] % 50 == 0:
-                    print "%s / %d frames logged" % (self.sk_mapping[self.inc_sk.uuid]['frame'], self.after_a_number_of_frames)
+                if self.sk_mapping[self.inc_sk.uuid]['frame'] % 100 == 0:
+                    print "   %s / %d frames logged: %s" % (self.sk_mapping[self.inc_sk.uuid]['frame'], self.after_a_number_of_frames, self.inc_sk.uuid)
 
-                if self.sk_mapping[self.inc_sk.uuid]['frame'] >= self.after_a_number_of_frames and self.request_sent_flag == 0:
+                if self.sk_mapping[self.inc_sk.uuid]['frame'] >= self.after_a_number_of_frames:
                     print "storing the %sth image to mongo for the webserver..." % self.after_a_number_of_frames
-                    # Skeleton on white background
-                    query = {"_meta.image_type": "white_sk_image"}
-                    white_sk_to_mongo =  self.msg_store.update(message=self.white_sk_msg, meta={'image_type':"white_sk_image"}, message_query=query, upsert=True)
+                    request_consent = 1
+
                     # Skeleton on rgb background
                     query = {"_meta.image_type": "rgb_sk_image"}
                     rgb_sk_img_to_mongo = self.msg_store.update(message=self.rgb_sk_msg, meta={'image_type':"rgb_sk_image"}, message_query=query, upsert=True)
+
                     # Skeleton on depth background
                     query = {"_meta.image_type": "depth_image"}
                     depth_img_to_mongo = self.msg_store.update(message=self.depth_msg, meta={'image_type':"depth_image"}, message_query=query, upsert=True)
-
-                    consent_msg = "Check_consent_%s" % (t)
-                    print consent_msg
-                    # I think this should be a service call - so it definetly returns a value.
-                    self.request_sent_flag = 1
+                    
                     # move and speak: (if no target waypoint, go to original waypoint)
                     # self.reset_ptu()
-
-                    self.publish_consent_req.publish(consent_msg)
+                    
                     try:
                         self.navgoal.target = self.config[waypoint]['target']
                     except:
@@ -279,16 +266,11 @@ class SkeletonImageLogger(object):
                         if not result:
                             self.go_back_to_where_I_came_from()
 
-                    #self.publish_consent_req.publish(consent_msg)
-                    rospy.sleep(0.1)
-                    if self.request_sent_flag:
-                        self.speaker.send_goal(maryttsGoal(text=self.speech))
-
-                    #while self.consent_ret is None and not self.stop:
-                    #    rospy.sleep(0.1)
+                    rospy.sleep(0.01)
+                    self.speaker.send_goal(maryttsGoal(text=self.speech))
 
                     # Move Eyes - look up and down to draw attension.
-        return self.consent_ret
+        return request_consent
 
     def go_back_to_where_I_came_from(self):
         if self.nav_goal_waypoint is not None and self.nav_goal_waypoint != self.config[self.nav_goal_waypoint]['target']:
@@ -301,8 +283,9 @@ class SkeletonImageLogger(object):
             self.navClient.wait_for_result()
 
     def consent_ret_callback(self, msg):
+        print "-> consent ret callback", self.request_sent_flag, msg
         if self.request_sent_flag != 1: return
-        print "got consent ret callback, %s" % msg
+        #print "consent given: %s" % msg
         self.consent_ret=msg
         # self.request_sent_flag = 0
         # when the request is returned, go back to previous waypoint
@@ -329,8 +312,9 @@ class SkeletonImageLogger(object):
     def nav_client(self):
         rospy.loginfo("Creating nav client")
         self.navClient = actionlib.SimpleActionClient('topological_navigation', topological_navigation.msg.GotoNodeAction)
-        self.navClient.wait_for_server()
+        self.navClient.wait_for_server(timeout=rospy.Duration(1))
         self.navgoal = topological_navigation.msg.GotoNodeGoal()
+
 
     def speak(self):
         self.speaker = actionlib.SimpleActionClient('/speak', maryttsAction)
@@ -370,9 +354,9 @@ class SkeletonImageLogger(object):
         self.rgb_sk = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
 
 
-    def white_sk_callback(self, msg1):
-        if self.stop_image_callbacks != 0: return
-        self.white_sk_msg = msg1
+    #def white_sk_callback(self, msg1):
+    #    if self.stop_image_callbacks != 0: return
+    #    self.white_sk_msg = msg1
 
     def depth_callback(self, imgmsg):
         if self._flag_depth == 0:

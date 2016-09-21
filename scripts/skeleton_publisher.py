@@ -48,8 +48,9 @@ class SkeletonManager(object):
         self.rate = rospy.Rate(15.0)
 
         # only publish the skeleton data when the person is far enough away (distance threshold)
+        # maximum number of frames for one detection (not used when restricting the logger)
         self.frame_thresh = 5000
-        self.dist_thresh = 2.0
+        self.dist_thresh = 1.0
         self.dist_flag = 1
 
         # initialise mongodb client
@@ -99,13 +100,13 @@ class SkeletonManager(object):
 
             #If the tracker_state is 'Out of Scene' publish the accumulated skeleton
             if self.users[subj]["message"] == "Out of Scene" and subj in self.accumulate_data:
-                self._publish_complete_data(subj, self.logged_uuid) #logged_uuid from skeleton logger
+                self._publish_complete_data(subj, self.users[subj]["uuid"]) #logged_uuid from skeleton logger
                 self.data[subj]['flag'] = 0
 
         #For all subjects, publish the incremental skeleton and accumulate into self.data also.
         list_of_subs = [subj for subj in self.data if self.data[subj]['flag'] == 1]
 
-        incr_msg = skeleton_message()    # if no subjects detected:
+        # incr_msg = skeleton_message()    # if no subjects detected:
         for subj in list_of_subs:
             if self.users[subj]["message"] != "New":
                 continue            # this catches cases where a User leaves the scene but they still have /tf data
@@ -146,8 +147,8 @@ class SkeletonManager(object):
                     raise RuntimeError("this should never have occured; why is message not `New` or `Out of Scene' ??? ")
 
         #publish this for the action server if no subj in scene
-        if len(list_of_subs) == 0:
-            self.publish_incr.publish(incr_msg)
+        # if len(list_of_subs) == 0:
+        #     self.publish_incr.publish(incr_msg)
 
 
     def _accumulate_data(self, subj, current_msg):
@@ -159,6 +160,7 @@ class SkeletonManager(object):
 
 
     def _publish_complete_data(self, subj, uuid):
+        # print "pub compl", subj, uuid
         # when user goes "out of scene" publish their accumulated data
         st = self.accumulate_data[subj][0].joints[0].time
         en = self.accumulate_data[subj][-1].joints[-1].time
