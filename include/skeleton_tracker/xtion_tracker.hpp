@@ -388,13 +388,18 @@ private:
         uuid10 = uuid;
       std::cout << "uuid" << int(user.getId()) <<": " << uuid << std::endl;
     }
-    else if (user.isVisible() && !g_visibleUsers_[user.getId()])
+    else if (user.isVisible() && !g_visibleUsers_[user.getId()]){
       USER_MESSAGE("Visible")
+      state_msg.message = "Visible";
+    }
     else if (!user.isVisible() && g_visibleUsers_[user.getId()]){
       USER_MESSAGE("Out of Scene")
-      state_msg.message = "Out of Scene";}
-    else if (user.isLost())
+      state_msg.message = "Out of Scene";
+    }
+    else if (user.isLost()){
       USER_MESSAGE("Lost")
+      state_msg.message = "Lost";
+    }
 
     if (int(user.getId())==1)
       state_msg.uuid = uuid1;
@@ -424,13 +429,16 @@ private:
       switch (g_skeletonStates_[user.getId()] = user.getSkeleton().getState())
       {
         case nite::SKELETON_NONE:
-          USER_MESSAGE("Stopped tracking.")
+          USER_MESSAGE("Stopped tracking")
+          state_msg.message = "Stopped tracking";
           break;
         case nite::SKELETON_CALIBRATING:
           USER_MESSAGE("Calibrating...")
+          state_msg.message = "Calibrating";
           break;
         case nite::SKELETON_TRACKED:
           USER_MESSAGE("Tracking!")
+          state_msg.message = "Tracking";
           break;
         case nite::SKELETON_CALIBRATION_ERROR_NOT_IN_POSE:
         case nite::SKELETON_CALIBRATION_ERROR_HANDS:
