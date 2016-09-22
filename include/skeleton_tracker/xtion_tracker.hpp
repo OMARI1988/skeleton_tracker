@@ -469,7 +469,7 @@ private:
     {
       tf::Transform transform;
       transform.setOrigin(
-          tf::Vector3(j.getPosition().x / 1000.0, j.getPosition().y / 1000.0, j.getPosition().z / 1000.0));
+          tf::Vector3(j.getPosition().x / 1000.0, j.getPosition().y / -1000.0, j.getPosition().z / 1000.0));
       transform.setRotation(tf::Quaternion(0, 0, 0, 1));
       std::stringstream frame_id_stream;
       std::string frame_id;
@@ -538,92 +538,92 @@ private:
 
         // creating head joint message
         joint_name="head";
-        p.position.x = named_j[joint_name].getPosition().x/1000; p.position.y = named_j[joint_name].getPosition().y/1000; p.position.z = named_j[joint_name].getPosition().z/1000;
+        p.position.x = named_j[joint_name].getPosition().x/1000; p.position.y = named_j[joint_name].getPosition().y/-1000; p.position.z = named_j[joint_name].getPosition().z/1000;
         head_msg.name = joint_name;
         head_msg.pose = p;
         head_msg.confidence = named_j[joint_name].getPositionConfidence();
         // creating neck joint message
         joint_name="neck";
-        p.position.x = named_j[joint_name].getPosition().x/1000; p.position.y = named_j[joint_name].getPosition().y/1000; p.position.z = named_j[joint_name].getPosition().z/1000;
+        p.position.x = named_j[joint_name].getPosition().x/1000; p.position.y = named_j[joint_name].getPosition().y/-1000; p.position.z = named_j[joint_name].getPosition().z/1000;
         neck_msg.name = joint_name;
         neck_msg.pose = p;
         neck_msg.confidence = named_j[joint_name].getPositionConfidence();
         // creating toros joint message
         joint_name="torso";
-        p.position.x = named_j[joint_name].getPosition().x/1000; p.position.y = named_j[joint_name].getPosition().y/1000; p.position.z = named_j[joint_name].getPosition().z/1000;
+        p.position.x = named_j[joint_name].getPosition().x/1000; p.position.y = named_j[joint_name].getPosition().y/-1000; p.position.z = named_j[joint_name].getPosition().z/1000;
         torso_msg.name = joint_name;
         torso_msg.pose = p;
         torso_msg.confidence = named_j[joint_name].getPositionConfidence();
         // creating right hand joint message
         joint_name="right_hand";
-        p.position.x = named_j[joint_name].getPosition().x/1000; p.position.y = named_j[joint_name].getPosition().y/1000; p.position.z = named_j[joint_name].getPosition().z/1000;
+        p.position.x = named_j[joint_name].getPosition().x/1000; p.position.y = named_j[joint_name].getPosition().y/-1000; p.position.z = named_j[joint_name].getPosition().z/1000;
         right_hand_msg.name = joint_name;
         right_hand_msg.pose = p;
         right_hand_msg.confidence = named_j[joint_name].getPositionConfidence();
         // creating right elbow joint message
         joint_name="right_elbow";
-        p.position.x = named_j[joint_name].getPosition().x/1000; p.position.y = named_j[joint_name].getPosition().y/1000; p.position.z = named_j[joint_name].getPosition().z/1000;
+        p.position.x = named_j[joint_name].getPosition().x/1000; p.position.y = named_j[joint_name].getPosition().y/-1000; p.position.z = named_j[joint_name].getPosition().z/1000;
         right_elbow_msg.name = joint_name;
         right_elbow_msg.pose = p;
         right_elbow_msg.confidence = named_j[joint_name].getPositionConfidence();
         // creating right shoulder joint message
         joint_name="right_shoulder";
-        p.position.x = named_j[joint_name].getPosition().x/1000; p.position.y = named_j[joint_name].getPosition().y/1000; p.position.z = named_j[joint_name].getPosition().z/1000;
+        p.position.x = named_j[joint_name].getPosition().x/1000; p.position.y = named_j[joint_name].getPosition().y/-1000; p.position.z = named_j[joint_name].getPosition().z/1000;
         right_shoulder_msg.name = joint_name;
         right_shoulder_msg.pose = p;
         right_shoulder_msg.confidence = named_j[joint_name].getPositionConfidence();
         // creating right hip joint message
         joint_name="right_hip";
-        p.position.x = named_j[joint_name].getPosition().x/1000; p.position.y = named_j[joint_name].getPosition().y/1000; p.position.z = named_j[joint_name].getPosition().z/1000;
+        p.position.x = named_j[joint_name].getPosition().x/1000; p.position.y = named_j[joint_name].getPosition().y/-1000; p.position.z = named_j[joint_name].getPosition().z/1000;
         right_hip_msg.name = joint_name;
         right_hip_msg.pose = p;
         right_hip_msg.confidence = named_j[joint_name].getPositionConfidence();
         // creating right knee joint message
         joint_name="right_knee";
-        p.position.x = named_j[joint_name].getPosition().x/1000; p.position.y = named_j[joint_name].getPosition().y/1000; p.position.z = named_j[joint_name].getPosition().z/1000;
+        p.position.x = named_j[joint_name].getPosition().x/1000; p.position.y = named_j[joint_name].getPosition().y/-1000; p.position.z = named_j[joint_name].getPosition().z/1000;
         right_knee_msg.name = joint_name;
         right_knee_msg.pose = p;
         right_knee_msg.confidence = named_j[joint_name].getPositionConfidence();
         // creating right foot joint message
         joint_name="right_foot";
-        p.position.x = named_j[joint_name].getPosition().x/1000; p.position.y = named_j[joint_name].getPosition().y/1000; p.position.z = named_j[joint_name].getPosition().z/1000;
+        p.position.x = named_j[joint_name].getPosition().x/1000; p.position.y = named_j[joint_name].getPosition().y/-1000; p.position.z = named_j[joint_name].getPosition().z/1000;
         right_foot_msg.name = joint_name;
         right_foot_msg.pose = p;
         right_foot_msg.confidence = named_j[joint_name].getPositionConfidence();
 
         // creating left hand joint message
         joint_name="left_hand";
-        p.position.x = named_j[joint_name].getPosition().x/1000; p.position.y = named_j[joint_name].getPosition().y/1000; p.position.z = named_j[joint_name].getPosition().z/1000;
+        p.position.x = named_j[joint_name].getPosition().x/1000; p.position.y = named_j[joint_name].getPosition().y/-1000; p.position.z = named_j[joint_name].getPosition().z/1000;
         left_hand_msg.name = joint_name;
         left_hand_msg.pose = p;
         left_hand_msg.confidence = named_j[joint_name].getPositionConfidence();
         // creating left elbow joint message
         joint_name="left_elbow";
-        p.position.x = named_j[joint_name].getPosition().x/1000; p.position.y = named_j[joint_name].getPosition().y/1000; p.position.z = named_j[joint_name].getPosition().z/1000;
+        p.position.x = named_j[joint_name].getPosition().x/1000; p.position.y = named_j[joint_name].getPosition().y/-1000; p.position.z = named_j[joint_name].getPosition().z/1000;
         left_elbow_msg.name = joint_name;
         left_elbow_msg.pose = p;
         left_elbow_msg.confidence = named_j[joint_name].getPositionConfidence();
         // creating left shoulder joint message
         joint_name="left_shoulder";
-        p.position.x = named_j[joint_name].getPosition().x/1000; p.position.y = named_j[joint_name].getPosition().y/1000; p.position.z = named_j[joint_name].getPosition().z/1000;
+        p.position.x = named_j[joint_name].getPosition().x/1000; p.position.y = named_j[joint_name].getPosition().y/-1000; p.position.z = named_j[joint_name].getPosition().z/1000;
         left_shoulder_msg.name = joint_name;
         left_shoulder_msg.pose = p;
         left_shoulder_msg.confidence = named_j[joint_name].getPositionConfidence();
         // creating left hip joint message
         joint_name="left_hip";
-        p.position.x = named_j[joint_name].getPosition().x/1000; p.position.y = named_j[joint_name].getPosition().y/1000; p.position.z = named_j[joint_name].getPosition().z/1000;
+        p.position.x = named_j[joint_name].getPosition().x/1000; p.position.y = named_j[joint_name].getPosition().y/-1000; p.position.z = named_j[joint_name].getPosition().z/1000;
         left_hip_msg.name = joint_name;
         left_hip_msg.pose = p;
         left_hip_msg.confidence = named_j[joint_name].getPositionConfidence();
         // creating left knee joint message
         joint_name="left_knee";
-        p.position.x = named_j[joint_name].getPosition().x/1000; p.position.y = named_j[joint_name].getPosition().y/1000; p.position.z = named_j[joint_name].getPosition().z/1000;
+        p.position.x = named_j[joint_name].getPosition().x/1000; p.position.y = named_j[joint_name].getPosition().y/-1000; p.position.z = named_j[joint_name].getPosition().z/1000;
         left_knee_msg.name = joint_name;
         left_knee_msg.pose = p;
         left_knee_msg.confidence = named_j[joint_name].getPositionConfidence();
         // creating left foot joint message
         joint_name="left_foot";
-        p.position.x = named_j[joint_name].getPosition().x/1000; p.position.y = named_j[joint_name].getPosition().y/1000; p.position.z = named_j[joint_name].getPosition().z/1000;
+        p.position.x = named_j[joint_name].getPosition().x/1000; p.position.y = named_j[joint_name].getPosition().y/-1000; p.position.z = named_j[joint_name].getPosition().z/1000;
         left_foot_msg.name = joint_name;
         left_foot_msg.pose = p;
         left_foot_msg.confidence = named_j[joint_name].getPositionConfidence();
@@ -893,4 +893,3 @@ private:
 ;
 
 #endif /* XTION_TRACKER_HPP_ */
-
