@@ -32,6 +32,7 @@ add_message_files(
    user_IDs.msg
    joint_message.msg
    skeleton_message.msg
+   robot_message.msg
    skeleton_complete.msg
    skeleton_tracker_state.msg
 )
