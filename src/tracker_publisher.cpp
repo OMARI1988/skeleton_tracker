@@ -53,7 +53,7 @@
 #include <string.h>
 #include <strings.h>
 #include <std_msgs/Int16.h>
-#include <skeleton_tracker/user_IDs.h>
+//#include <skeleton_tracker/user_IDs.h>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>

@@ -231,7 +231,7 @@ public:
 
     rgbInfoPub_ = nh_.advertise<sensor_msgs::CameraInfo>("/"+camera+"/rgb/camera_info", 1);
 
-    incremental_msg_pub_ = nh_.advertise<skeleton_tracker::skeleton_message>("/skeleton_data/new_incremental", 1);
+    incremental_msg_pub_ = nh_.advertise<skeleton_tracker::skeleton_message>("/skeleton_data/incremental", 1);
 
     // rate_ = new ros::Rate(300);
 

@@ -16,8 +16,8 @@ find_package(catkin REQUIRED COMPONENTS
   roslib
   tf
   message_generation
-  actionlib
-  actionlib_msgs
+#  actionlib
+#  actionlib_msgs
 )
 
 #find_package(opencv REQUIRED)
@@ -38,25 +38,27 @@ add_message_files(
 )
 
 ## Generate services in the 'srv' folder
-add_service_files(
-   FILES
-   DeleteImages.srv
- )
+#add_service_files(
+#   FILES
+#   DeleteImages.srv
+# )
 
 
-add_action_files(
-  DIRECTORY action
-  FILES skeleton.action
-)
+#add_action_files(
+#  DIRECTORY action
+#  FILES skeleton.action
+#)
 
 generate_messages(
-    DEPENDENCIES geometry_msgs actionlib_msgs
+    DEPENDENCIES geometry_msgs
+    # actionlib_msgs
 )
 
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES skeleton_tracker
-  CATKIN_DEPENDS cv_bridge geometry_msgs image_transport kdl_conversions openni2_camera pcl_conversions pcl_ros roscpp roslib tf actionlib_msgs
+  CATKIN_DEPENDS cv_bridge geometry_msgs image_transport kdl_conversions openni2_camera pcl_conversions pcl_ros roscpp roslib tf
+  # actionlib_msgs
   DEPENDS system_lib opencv message_runtime
 )
 
@@ -70,6 +72,9 @@ include_directories(${NITE2_DIR}/Include)
 
 link_directories(${OPENNI2_DIR}/Bin/x64-Release)
 
+include_directories(
+  ${catkin_INCLUDE_DIRS}
+)
 include_directories(${OPENNI2_DIR}/Bin/x64-Release)
 include_directories(/usr/include/openni2/)
 include_directories(${OPENNI2_DIR}/Include)
@@ -83,3 +88,11 @@ target_link_libraries(xtion_tracker OpenNI2 ${NITE2_LIB} ${OpenCV_LIBRARIES} ${c
 #target_link_libraries(skeleton_tracker OpenNI2 NiTE2 ${NITE2_LIB} ${OpenCV_LIBRARIES} ${catkin_LIBRARIES})
 #add_executable(tracker_publisher src/tracker_publisher.cpp)
 #target_link_libraries(tracker_publisher OpenNI2 ${NITE2_LIB} ${OpenCV_LIBRARIES} ${catkin_LIBRARIES})
+
+
+#install(DIRECTORY include/${PROJECT_NAME}/
+#  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+#  FILES_MATCHING PATTERN "*.h"
+#  PATTERN ".svn" EXCLUDE)
+
+

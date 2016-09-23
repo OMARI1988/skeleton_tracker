@@ -54,18 +54,18 @@ class skeleton_server(object):
             if consent_client.wait_for_server(timeout=rospy.Duration(10)):
                 goal = ManageConsentGoal()
                 consent_client.send_goal(goal)
-                
+
                 # here you should check whether you've been preempted, shutdown etc. while waiting for consent
                 while not self._as.is_preempt_requested() and (end - start).secs < duration:
 
                     if consent_client.wait_for_result(timeout = rospy.Duration(1)):
                         result = consent_client.get_result()
                         int_result = result.result.result
-    
+
                         if int_result == ConsentResult.DEPTH_AND_RGB:
                             # print 'depth+rgb'
                             ret = "everything"
-                            
+
                         elif int_result == ConsentResult.DEPTH_ONLY:
                             # print 'just depth'
                             ret = "depthskel"
@@ -74,10 +74,10 @@ class skeleton_server(object):
                             ret = "nothing"
                         break
                     end = rospy.Time.now()
-                    
+
                 if (end - start).secs >= duration:
                     print "timed out"
-                
+
                 if self._as.is_preempt_requested():
                     consent_client.cancel_all_goals()
             else:
@@ -85,8 +85,8 @@ class skeleton_server(object):
         except Exception, e:
             rospy.logwarn('Exception when trying to manage consent: %s' % e)
         return ret
-  
-  
+
+
     def signal_start_of_recording(self):
         rospy.wait_for_service('signal_recording_started', timeout=10)
         signal_recording_started = rospy.ServiceProxy('signal_recording_started', Empty)
@@ -118,7 +118,7 @@ class skeleton_server(object):
         consent_msg = None
         request_consent = 0
         first_time = 1
-        
+
         while (end - start).secs < duration.secs:
             if self._as.is_preempt_requested():
                  break
@@ -140,7 +140,7 @@ class skeleton_server(object):
                     request_consent = self.image_logger.callback(skel_msg, goal.waypoint)
                     if request_consent is 1:
                         consented_uuid = skel_msg.uuid
-                        
+
             elif consent_msg is not None:
                 print "breaking loop for: %s" % consented_uuid
                 break
@@ -160,13 +160,13 @@ class skeleton_server(object):
         print "exited loop"
         if consent_msg is None:
             consent_msg = "nothing"
-            
+
         self.reset_all()
-        
+
         # if no skeleton was recorded for the threshold
         if request_consent is 0:
             self.return_to_main_webpage()
-		
+
         # try:
         #     self.image_logger.bag_file.close()
         # except AttributeError:
@@ -226,7 +226,7 @@ class skeleton_server(object):
 
 
     def incremental_callback(self, msg):
-    	# print ">", msg.uuid  # doesnt receive empty messages anymore
+        # print ">", msg.uuid  # doesnt receive empty messages anymore
         self.skeleton_msg = msg
 
     def reset_ptu(self):
