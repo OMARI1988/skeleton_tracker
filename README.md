@@ -28,14 +28,20 @@ openni2_tracker
     https://github.com/strands-project-releases/strands-releases/wiki
     ```
 
-5. Finaly, catkin make your catkin_ws
+5. Get openni2 launch
+
+    ```bash
+    sudo apt-get install ros-indigo-openni2-launch
+    ```
+
+6. Finaly, catkin make your catkin_ws
 
     ```bash
     cd catkin_ws
     catkin_make
     ```
 
-6. Now you should be able to run the skeleton tracker
+7. Now you should be able to run the skeleton tracker
 
     ```bash
     roslaunch skeleton_tracker tracker.launch camera:=head_xtion log_skeleton:=True message_store:=people_skeleton
