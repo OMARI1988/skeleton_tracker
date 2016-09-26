@@ -3,6 +3,7 @@ string uuid
 time start_time
 time end_time
 string date
+string time
 skeleton_tracker/skeleton_message[] skeleton_data
 skeleton_tracker/robot_message[] robot_data
 int32 number_of_detections
