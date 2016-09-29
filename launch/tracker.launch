@@ -24,6 +24,7 @@
       <arg name="depth_registration" value="True"/>
       <arg name="debayer_processing" value="True"/>
       <arg name="sw_registered_processing" value="True"/>
+      <arg name="rgb_camera_info_url" value="/home/strands/.ros/camera_info/rgb_PS1080_PrimeSense.yaml"/>
     </include>
   </group>
 </launch>
