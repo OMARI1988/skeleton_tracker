@@ -34,6 +34,7 @@ add_message_files(
    skeleton_message.msg
    robot_message.msg
    skeleton_tracker_state.msg
+   SkeletonComplete.msg
 )
 
 ## Generate services in the 'srv' folder
