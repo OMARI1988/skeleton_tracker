@@ -15,6 +15,7 @@
 
 // ROS Dependencies
 #include <ros/ros.h>
+#include <std_msgs/Float64.h>
 #include <tf/transform_broadcaster.h>
 #include <iostream>
 #include <cv_bridge/cv_bridge.h>
@@ -47,11 +48,13 @@
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
 
-#include <fstream>
-#include "yaml-cpp/yaml.h"
-
-#include <iostream>
-#include <vector>
+// #include <fstream>
+// #include <string>
+// #include <vector>
+// #include <sstream>
+// #include <boost/algorithm/string.hpp>
+//
+// #include <yaml.h>
 
 #ifndef ALPHA
 #define ALPHA 1/256
@@ -88,6 +91,13 @@ typedef union
  * Class \ref xtion_tracker. This class can track the skeleton of people and returns joints as a TF stream,
  *  while publishing the video stream and the point cloud captured by an ASUS Xtion Pro Live.
  */
+void chatterCallback(const std_msgs::Float64::ConstPtr& msg)
+{
+   std::cout << msg << std::endl;
+ // ROS_INFO(msg);
+}
+
+
 class xtion_tracker
 {
 public:
@@ -228,16 +238,45 @@ public:
     // Initialize the users IDs publisher
     userPub_ = nh_.advertise<skeleton_tracker::user_IDs>("/people", 1);
 
-    // reading the camera calibration
-    std::ifstream fin("~/.ros/camera_info/rgb_PS1080_PrimeSense.yaml");
-    // YAML::Parser parser(fin);
+    sub = nh_.subscribe("/image_calib", 1000, chatterCallback);
 
-    // YAML::Node doc;
-    // for(unsigned i=0;i<doc.size();i++) {
-    //     std::string scalar;
-    //     doc[i] >> scalar;
-    //     std::cout << "Found scalar: " << scalar << std::endl;
+    // reading the camera calibration
+    // yaml_parser_t parser;
+    // yaml_event_t event;
+    //
+    // int done = 0;
+    // /* Create the Parser object. */
+    // yaml_parser_initialize(&parser);
+    //
+    // /* Set a file input. */
+    // FILE *input = fopen("/home/lucie01/.ros/camera_info/rgb_PS1080_PrimeSense.yaml", "rb");
+    //
+    // yaml_parser_set_input_file(&parser, input);
+
+
+    // std::ifstream fin("~/.ros/camera_info/rgb_PS1080_PrimeSense.yaml");
+
+    // std::string line;
+    // std::vector<std::string> strs;
+    // std::ifstream myfile ("/home/lucie01/.ros/camera_info/rgb_PS1080_PrimeSense.yaml");
+    // std::cout << myfile << std::endl;
+    // if (myfile.is_open())
+    // {
+    //   while ( getline (myfile,line) )
+    //   {
+    //     // std::cout << line << '\n';
+    //     boost::split(strs, line, boost::is_any_of(":"));
+    //     // std::copy(strs.begin(), strs.end(), std::ostream_iterator<std::string>(std::cout, " "));
+    //     std::cout << strs[0] << std::endl;
+    //     std::cout << strs[1] << std::endl;
+    //     int i_dec = std::stoi (strs[1],nullptr,16);
+    //     // std::cout << \n';
+    //   }
+    //   myfile.close();
     // }
+    //
+    // else std::cout << "############################################# Unable to open file" << '\n';
+
 
     // Initialize both the Camera Info publishers
     depthInfoPub_ = nh_.advertise<sensor_msgs::CameraInfo>("/"+camera+"/depth/camera_info", 1);
@@ -381,36 +420,8 @@ private:
       state_msg.message = "New";
       now_str = num_to_str<double>(ros::Time::now().toSec());
       std::string uuid = generateUUID(now_str, state_msg.userID);
-      if (int(user.getId())==1)
-        uuid1 = uuid;
-      else if (int(user.getId())==2)
-        uuid2 = uuid;
-      else if (int(user.getId())==3)
-        uuid3 = uuid;
-      else if (int(user.getId())==4)
-        uuid4 = uuid;
-      else if (int(user.getId())==5)
-        uuid5 = uuid;
-      else if (int(user.getId())==6)
-        uuid6 = uuid;
-      else if (int(user.getId())==7)
-        uuid7 = uuid;
-      else if (int(user.getId())==8)
-        uuid8 = uuid;
-      else if (int(user.getId())==9)
-        uuid9 = uuid;
-      else if (int(user.getId())==10)
-        uuid10 = uuid;
-      else if (int(user.getId())==11)
-        uuid11 = uuid;
-      else if (int(user.getId())==12)
-        uuid12 = uuid;
-      else if (int(user.getId())==13)
-        uuid13 = uuid;
-      else if (int(user.getId())==14)
-        uuid14 = uuid;
-      else if (int(user.getId())==15)
-        uuid15 = uuid;
+      std::cout << int(user.getId()) << uuid << std::endl;
+      alluuid[int(user.getId())] = uuid;
       std::cout << "uuid" << int(user.getId()) <<": " << uuid << std::endl;
     }
     else if (user.isVisible() && !g_visibleUsers_[user.getId()]){
@@ -426,36 +437,7 @@ private:
       state_msg.message = "Lost";
     }
 
-    if (int(user.getId())==1)
-      state_msg.uuid = uuid1;
-    else if (int(user.getId())==2)
-      state_msg.uuid = uuid2;
-    else if (int(user.getId())==3)
-      state_msg.uuid = uuid3;
-    else if (int(user.getId())==4)
-      state_msg.uuid = uuid4;
-    else if (int(user.getId())==5)
-      state_msg.uuid = uuid5;
-    else if (int(user.getId())==6)
-      state_msg.uuid = uuid6;
-    else if (int(user.getId())==7)
-      state_msg.uuid = uuid7;
-    else if (int(user.getId())==8)
-      state_msg.uuid = uuid8;
-    else if (int(user.getId())==9)
-      state_msg.uuid = uuid9;
-    else if (int(user.getId())==10)
-      state_msg.uuid = uuid10;
-    else if (int(user.getId())==11)
-      state_msg.uuid = uuid11;
-    else if (int(user.getId())==12)
-      state_msg.uuid = uuid12;
-    else if (int(user.getId())==13)
-      state_msg.uuid = uuid13;
-    else if (int(user.getId())==14)
-      state_msg.uuid = uuid14;
-    else if (int(user.getId())==15)
-      state_msg.uuid = uuid15;
+    state_msg.uuid = alluuid[int(user.getId())];
 
     g_visibleUsers_[user.getId()] = user.isVisible();
 
@@ -518,6 +500,7 @@ private:
   /**
    * Get the skeleton's joints and the users IDs
    */
+
   void getSkeleton()
   {
 
@@ -664,36 +647,8 @@ private:
         left_foot_msg.confidence = named_j[joint_name].getPositionConfidence();
 
         incremental_msg.userID = int(user.getId());
-        if (int(user.getId())==1)
-          incremental_msg.uuid = uuid1;
-        else if (int(user.getId())==2)
-          incremental_msg.uuid = uuid2;
-        else if (int(user.getId())==3)
-          incremental_msg.uuid = uuid3;
-        else if (int(user.getId())==4)
-          incremental_msg.uuid = uuid4;
-        else if (int(user.getId())==5)
-          incremental_msg.uuid = uuid5;
-        else if (int(user.getId())==6)
-          incremental_msg.uuid = uuid6;
-        else if (int(user.getId())==7)
-          incremental_msg.uuid = uuid7;
-        else if (int(user.getId())==8)
-          incremental_msg.uuid = uuid8;
-        else if (int(user.getId())==9)
-          incremental_msg.uuid = uuid9;
-        else if (int(user.getId())==10)
-          incremental_msg.uuid = uuid10;
-        else if (int(user.getId())==11)
-          incremental_msg.uuid = uuid11;
-        else if (int(user.getId())==12)
-          incremental_msg.uuid = uuid12;
-        else if (int(user.getId())==13)
-          incremental_msg.uuid = uuid13;
-        else if (int(user.getId())==14)
-          incremental_msg.uuid = uuid14;
-        else if (int(user.getId())==15)
-          incremental_msg.uuid = uuid15;
+        // if (int(user.getId())==1)
+        incremental_msg.uuid = alluuid[int(user.getId())];
 
         incremental_msg.joints.clear();
         incremental_msg.joints.push_back(head_msg);
@@ -810,8 +765,8 @@ private:
     info_msg->header.stamp = time;
     info_msg->width = is_rgb ? mMode_.getResolutionX() : depthMode_.getResolutionX();
     info_msg->height = is_rgb ? mMode_.getResolutionY() : depthMode_.getResolutionY();
-    info_msg->D = std::vector<double>(5, 0.0);
     info_msg->distortion_model = sensor_msgs::distortion_models::PLUMB_BOB;
+    info_msg->D = std::vector<double>(5, 0.0);
     info_msg->K.assign(0.0);
     info_msg->R.assign(0.0);
     info_msg->P.assign(0.0);
@@ -870,6 +825,8 @@ private:
   image_transport::Publisher imagePub_;
   /// RGB sk tracks image publisher
   image_transport::Publisher imageSKPub_;
+
+
   // image_transport::Publisher imageWhitePub_;
   cv::Mat mImage;
   // cv::Mat mImage_white;
@@ -877,6 +834,8 @@ private:
   ros::Publisher userPub_;
   /// Point cloud publisher
   ros::Publisher pointCloudPub_;
+
+  ros::Subscriber sub;
   /// Image message
   sensor_msgs::ImagePtr msg_;
 
@@ -897,21 +856,11 @@ private:
   ros::Publisher depthInfoPub_;
 
   /// variable to save the uuids for users
-  std::string uuid1;
-  std::string uuid2;
-  std::string uuid3;
-  std::string uuid4;
-  std::string uuid5;
-  std::string uuid6;
-  std::string uuid7;
-  std::string uuid8;
-  std::string uuid9;
-  std::string uuid10;
-  std::string uuid11;
-  std::string uuid12;
-  std::string uuid13;
-  std::string uuid14;
-  std::string uuid15;
+  std::string alluuid[200];
+
+  //camera_calibrations
+  std::vector<double> D_;
+  // std::vector<double> K_();
 
   ::geometry_msgs::Pose p;
   std::string joint_name;
