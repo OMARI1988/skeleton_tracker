@@ -47,6 +47,8 @@
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
 
+#include <fstream>
+#include "yaml-cpp/yaml.h"
 
 #include <iostream>
 #include <vector>
@@ -55,7 +57,7 @@
 #define ALPHA 1/256
 #endif
 
-#define MAX_USERS 2
+#define MAX_USERS 10
 
 #define USER_MESSAGE(msg) \
         {printf("[%08llu] User #%d:\t%s\n",ts, user.getId(),msg);}
@@ -226,6 +228,17 @@ public:
     // Initialize the users IDs publisher
     userPub_ = nh_.advertise<skeleton_tracker::user_IDs>("/people", 1);
 
+    // reading the camera calibration
+    std::ifstream fin("~/.ros/camera_info/rgb_PS1080_PrimeSense.yaml");
+    // YAML::Parser parser(fin);
+
+    // YAML::Node doc;
+    // for(unsigned i=0;i<doc.size();i++) {
+    //     std::string scalar;
+    //     doc[i] >> scalar;
+    //     std::cout << "Found scalar: " << scalar << std::endl;
+    // }
+
     // Initialize both the Camera Info publishers
     depthInfoPub_ = nh_.advertise<sensor_msgs::CameraInfo>("/"+camera+"/depth/camera_info", 1);
 
@@ -237,6 +250,8 @@ public:
 
     // Initialize the skeleton state publisher
     skeleton_state_pub_ = nh_.advertise<skeleton_tracker::skeleton_tracker_state>("skeleton_data/state", 10);
+
+
 
   }
   /**
@@ -386,6 +401,16 @@ private:
         uuid9 = uuid;
       else if (int(user.getId())==10)
         uuid10 = uuid;
+      else if (int(user.getId())==11)
+        uuid11 = uuid;
+      else if (int(user.getId())==12)
+        uuid12 = uuid;
+      else if (int(user.getId())==13)
+        uuid13 = uuid;
+      else if (int(user.getId())==14)
+        uuid14 = uuid;
+      else if (int(user.getId())==15)
+        uuid15 = uuid;
       std::cout << "uuid" << int(user.getId()) <<": " << uuid << std::endl;
     }
     else if (user.isVisible() && !g_visibleUsers_[user.getId()]){
@@ -421,6 +446,16 @@ private:
       state_msg.uuid = uuid9;
     else if (int(user.getId())==10)
       state_msg.uuid = uuid10;
+    else if (int(user.getId())==11)
+      state_msg.uuid = uuid11;
+    else if (int(user.getId())==12)
+      state_msg.uuid = uuid12;
+    else if (int(user.getId())==13)
+      state_msg.uuid = uuid13;
+    else if (int(user.getId())==14)
+      state_msg.uuid = uuid14;
+    else if (int(user.getId())==15)
+      state_msg.uuid = uuid15;
 
     g_visibleUsers_[user.getId()] = user.isVisible();
 
@@ -649,6 +684,16 @@ private:
           incremental_msg.uuid = uuid9;
         else if (int(user.getId())==10)
           incremental_msg.uuid = uuid10;
+        else if (int(user.getId())==11)
+          incremental_msg.uuid = uuid11;
+        else if (int(user.getId())==12)
+          incremental_msg.uuid = uuid12;
+        else if (int(user.getId())==13)
+          incremental_msg.uuid = uuid13;
+        else if (int(user.getId())==14)
+          incremental_msg.uuid = uuid14;
+        else if (int(user.getId())==15)
+          incremental_msg.uuid = uuid15;
 
         incremental_msg.joints.clear();
         incremental_msg.joints.push_back(head_msg);
@@ -862,6 +907,11 @@ private:
   std::string uuid8;
   std::string uuid9;
   std::string uuid10;
+  std::string uuid11;
+  std::string uuid12;
+  std::string uuid13;
+  std::string uuid14;
+  std::string uuid15;
 
   ::geometry_msgs::Pose p;
   std::string joint_name;
@@ -893,3 +943,4 @@ private:
 ;
 
 #endif /* XTION_TRACKER_HPP_ */
+
