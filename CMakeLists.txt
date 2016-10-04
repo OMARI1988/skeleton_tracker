@@ -33,8 +33,8 @@ add_message_files(
    joint_message.msg
    skeleton_message.msg
    robot_message.msg
-   skeleton_complete.msg
    skeleton_tracker_state.msg
+   SkeletonComplete.msg
 )
 
 ## Generate services in the 'srv' folder
@@ -94,5 +94,3 @@ target_link_libraries(xtion_tracker OpenNI2 ${NITE2_LIB} ${OpenCV_LIBRARIES} ${c
 #  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
 #  FILES_MATCHING PATTERN "*.h"
 #  PATTERN ".svn" EXCLUDE)
-
-

@@ -1,4 +1,4 @@
-Header header
+std_msgs/Header header
 string uuid
 time start_time
 time end_time
@@ -9,3 +9,4 @@ skeleton_tracker/robot_message[] robot_data
 int32 number_of_detections
 string map_name
 string current_topo_node
+geometry_msgs/Point human_map_point
