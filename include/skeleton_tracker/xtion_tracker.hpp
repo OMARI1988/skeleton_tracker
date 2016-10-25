@@ -54,7 +54,20 @@
 // #include <sstream>
 // #include <boost/algorithm/string.hpp>
 //
-// #include <yaml.h>
+#include <yaml-cpp-0.3/yaml.h>
+//#include "yaml-cpp-0.3/parser.h"
+//#include "yaml-cpp-0.3/emitter.h"
+//#include "yaml-cpp-0.3/emitterstyle.h"
+//#include "yaml-cpp-0.3/stlemitter.h"
+//#include "yaml-cpp-0.3/exceptions.h"
+
+//#include "yaml-cpp-0.3/node.h"
+//#include "yaml-cpp-0.3/node/impl.h"
+//#include "yaml-cpp-0.3/node/convert.h"
+//#include "yaml-cpp-0.3/node/iterator.h"
+//#include "yaml-cpp-0.3/node/detail/impl.h"
+//#include "yaml-cpp-0.3/node/parse.h"
+//#include "yaml-cpp-0.3/node/emit.h"
 
 #ifndef ALPHA
 #define ALPHA 1/256
@@ -241,18 +254,39 @@ public:
     sub = nh_.subscribe("/image_calib", 1000, chatterCallback);
 
     // reading the camera calibration
-    // yaml_parser_t parser;
-    // yaml_event_t event;
-    //
-    // int done = 0;
-    // /* Create the Parser object. */
-    // yaml_parser_initialize(&parser);
-    //
-    // /* Set a file input. */
-    // FILE *input = fopen("/home/lucie01/.ros/camera_info/rgb_PS1080_PrimeSense.yaml", "rb");
-    //
-    // yaml_parser_set_input_file(&parser, input);
+    std::ifstream fin("/home/lucie02/.ros/camera_info/rgb_PS1080_PrimeSense.yaml");
+    YAML_0_3::Parser parser(fin);
 
+    std::cout << "test1: " << std::endl;
+    YAML_0_3::Node doc;    // already parsed
+    while(parser.GetNextDocument(doc)) {
+	int height;
+	doc["image_height"] >> height;
+        std::cout << "image_height: " << height << std::endl;
+
+
+        for(YAML_0_3::Iterator it=doc.begin();it!=doc.end();++it) {
+           std::cout << "test2: " << std::endl;
+    	   std::string key, value;
+           it.first() >> key;
+           //it.second() >> value;
+           std::cout << "Key: " << key << ", value: " << std::endl;
+        }
+    }
+	
+
+        /*
+          ...
+          Process the event.
+          ...
+        */
+
+        /* Are we finished? */
+        //done = (event.type == YAML_STREAM_END_EVENT);
+
+        /* The application is responsible for destroying the event object. */
+        //yaml_event_delete(&event);
+    //}
 
     // std::ifstream fin("~/.ros/camera_info/rgb_PS1080_PrimeSense.yaml");
 

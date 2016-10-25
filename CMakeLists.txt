@@ -16,6 +16,7 @@ find_package(catkin REQUIRED COMPONENTS
   roslib
   tf
   message_generation
+  yaml_cpp_0_3
 #  actionlib
 #  actionlib_msgs
 )
@@ -84,6 +85,9 @@ include_directories(${OpenCV_INCLUDE_DIRS}/include)
 
 add_executable(xtion_tracker src/xtion_tracker_node.cpp)
 target_link_libraries(xtion_tracker OpenNI2 ${NITE2_LIB} ${OpenCV_LIBRARIES} ${catkin_LIBRARIES})
+
+#target_link_libraries(${PROJECT_NAME} yaml-cpp)
+
 #add_executable(skeleton_tracker src/skeleton_tracker_node.cpp)
 #target_link_libraries(skeleton_tracker OpenNI2 NiTE2 ${NITE2_LIB} ${OpenCV_LIBRARIES} ${catkin_LIBRARIES})
 #add_executable(tracker_publisher src/tracker_publisher.cpp)
