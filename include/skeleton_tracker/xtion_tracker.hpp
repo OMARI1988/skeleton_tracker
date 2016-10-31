@@ -55,7 +55,7 @@
 #define ALPHA 1/256
 #endif
 
-#define MAX_USERS 10
+#define MAX_USERS 100
 
 #define USER_MESSAGE(msg) \
         {printf("[%08llu] User #%d:\t%s\n",ts, user.getId(),msg);}
@@ -84,6 +84,33 @@ void operator >> (const YAML_0_3::Node& node, Vec9& v) {
 void operator >> (const YAML_0_3::Node& node, Vec12& v) {
     for(int i=0;i<12;i++)
       node[i] >> v.x[i];
+}
+
+/// camera parameters
+double fx = 525.0;    // default values
+double fy = 525.0;    // default values
+double cx = 319.5;    // default values
+double cy = 239.5;    // default values
+
+::skeleton_tracker::joint_message generate_joint_message(std::string joint_name, nite::JointType nite_type, JointMap &named_j, ::geometry_msgs::Pose &p, const nite::UserData& user)
+{
+  named_j[joint_name] = (user.getSkeleton().getJoint(nite_type));
+
+  p.position.x = named_j[joint_name].getPosition().x/1000;
+  p.position.y = named_j[joint_name].getPosition().y/-1000;
+  p.position.z = named_j[joint_name].getPosition().z/1000;
+
+  ::skeleton_tracker::joint_message msg;
+  msg.name = joint_name;
+  msg.pose = p;
+  msg.confidence = named_j[joint_name].getPositionConfidence();
+  return msg;
+}
+
+void generate_joint_coordinates(std::string joint_name,int joint_id, int (&X)[15], int (&Y)[15],  JointMap &named_j)
+{
+  X[joint_id]=int(named_j[joint_name].getPosition().x*fx/named_j[joint_name].getPosition().z +cx);
+  Y[joint_id]=int(named_j[joint_name].getPosition().y*fy/named_j[joint_name].getPosition().z*-1 +cy);
 }
 
 /**
@@ -538,190 +565,69 @@ private:
       {
         JointMap named_j;
 
-        named_j["head"] = (user.getSkeleton().getJoint(nite::JOINT_HEAD));
-        named_j["neck"] = (user.getSkeleton().getJoint(nite::JOINT_NECK));
-        named_j["left_shoulder"] = (user.getSkeleton().getJoint(nite::JOINT_LEFT_SHOULDER));
-        named_j["right_shoulder"] = (user.getSkeleton().getJoint(nite::JOINT_RIGHT_SHOULDER));
-        named_j["left_elbow"] = (user.getSkeleton().getJoint(nite::JOINT_LEFT_ELBOW));
-        named_j["right_elbow"] = (user.getSkeleton().getJoint(nite::JOINT_RIGHT_ELBOW));
-        named_j["left_hand"] = (user.getSkeleton().getJoint(nite::JOINT_LEFT_HAND));
-        named_j["right_hand"] = (user.getSkeleton().getJoint(nite::JOINT_RIGHT_HAND));
-        named_j["torso"] = (user.getSkeleton().getJoint(nite::JOINT_TORSO));
-        named_j["left_hip"] = (user.getSkeleton().getJoint(nite::JOINT_LEFT_HIP));
-        named_j["right_hip"] = (user.getSkeleton().getJoint(nite::JOINT_RIGHT_HIP));
-        named_j["left_knee"] = (user.getSkeleton().getJoint(nite::JOINT_LEFT_KNEE));
-        named_j["right_knee"] = (user.getSkeleton().getJoint(nite::JOINT_RIGHT_KNEE));
-        named_j["left_foot"] = (user.getSkeleton().getJoint(nite::JOINT_LEFT_FOOT));
-        named_j["right_foot"] = (user.getSkeleton().getJoint(nite::JOINT_RIGHT_FOOT));
 
-        // creating head joint message
-        joint_name="head";
-        p.position.x = named_j[joint_name].getPosition().x/1000; p.position.y = named_j[joint_name].getPosition().y/-1000; p.position.z = named_j[joint_name].getPosition().z/1000;
-        head_msg.name = joint_name;
-        head_msg.pose = p;
-        head_msg.confidence = named_j[joint_name].getPositionConfidence();
-        // creating neck joint message
-        joint_name="neck";
-        p.position.x = named_j[joint_name].getPosition().x/1000; p.position.y = named_j[joint_name].getPosition().y/-1000; p.position.z = named_j[joint_name].getPosition().z/1000;
-        neck_msg.name = joint_name;
-        neck_msg.pose = p;
-        neck_msg.confidence = named_j[joint_name].getPositionConfidence();
-        // creating toros joint message
-        joint_name="torso";
-        p.position.x = named_j[joint_name].getPosition().x/1000; p.position.y = named_j[joint_name].getPosition().y/-1000; p.position.z = named_j[joint_name].getPosition().z/1000;
-        torso_msg.name = joint_name;
-        torso_msg.pose = p;
-        torso_msg.confidence = named_j[joint_name].getPositionConfidence();
-        // creating right hand joint message
-        joint_name="right_hand";
-        p.position.x = named_j[joint_name].getPosition().x/1000; p.position.y = named_j[joint_name].getPosition().y/-1000; p.position.z = named_j[joint_name].getPosition().z/1000;
-        right_hand_msg.name = joint_name;
-        right_hand_msg.pose = p;
-        right_hand_msg.confidence = named_j[joint_name].getPositionConfidence();
-        // creating right elbow joint message
-        joint_name="right_elbow";
-        p.position.x = named_j[joint_name].getPosition().x/1000; p.position.y = named_j[joint_name].getPosition().y/-1000; p.position.z = named_j[joint_name].getPosition().z/1000;
-        right_elbow_msg.name = joint_name;
-        right_elbow_msg.pose = p;
-        right_elbow_msg.confidence = named_j[joint_name].getPositionConfidence();
-        // creating right shoulder joint message
-        joint_name="right_shoulder";
-        p.position.x = named_j[joint_name].getPosition().x/1000; p.position.y = named_j[joint_name].getPosition().y/-1000; p.position.z = named_j[joint_name].getPosition().z/1000;
-        right_shoulder_msg.name = joint_name;
-        right_shoulder_msg.pose = p;
-        right_shoulder_msg.confidence = named_j[joint_name].getPositionConfidence();
-        // creating right hip joint message
-        joint_name="right_hip";
-        p.position.x = named_j[joint_name].getPosition().x/1000; p.position.y = named_j[joint_name].getPosition().y/-1000; p.position.z = named_j[joint_name].getPosition().z/1000;
-        right_hip_msg.name = joint_name;
-        right_hip_msg.pose = p;
-        right_hip_msg.confidence = named_j[joint_name].getPositionConfidence();
-        // creating right knee joint message
-        joint_name="right_knee";
-        p.position.x = named_j[joint_name].getPosition().x/1000; p.position.y = named_j[joint_name].getPosition().y/-1000; p.position.z = named_j[joint_name].getPosition().z/1000;
-        right_knee_msg.name = joint_name;
-        right_knee_msg.pose = p;
-        right_knee_msg.confidence = named_j[joint_name].getPositionConfidence();
-        // creating right foot joint message
-        joint_name="right_foot";
-        p.position.x = named_j[joint_name].getPosition().x/1000; p.position.y = named_j[joint_name].getPosition().y/-1000; p.position.z = named_j[joint_name].getPosition().z/1000;
-        right_foot_msg.name = joint_name;
-        right_foot_msg.pose = p;
-        right_foot_msg.confidence = named_j[joint_name].getPositionConfidence();
 
-        // creating left hand joint message
-        joint_name="left_hand";
-        p.position.x = named_j[joint_name].getPosition().x/1000; p.position.y = named_j[joint_name].getPosition().y/-1000; p.position.z = named_j[joint_name].getPosition().z/1000;
-        left_hand_msg.name = joint_name;
-        left_hand_msg.pose = p;
-        left_hand_msg.confidence = named_j[joint_name].getPositionConfidence();
-        // creating left elbow joint message
-        joint_name="left_elbow";
-        p.position.x = named_j[joint_name].getPosition().x/1000; p.position.y = named_j[joint_name].getPosition().y/-1000; p.position.z = named_j[joint_name].getPosition().z/1000;
-        left_elbow_msg.name = joint_name;
-        left_elbow_msg.pose = p;
-        left_elbow_msg.confidence = named_j[joint_name].getPositionConfidence();
-        // creating left shoulder joint message
-        joint_name="left_shoulder";
-        p.position.x = named_j[joint_name].getPosition().x/1000; p.position.y = named_j[joint_name].getPosition().y/-1000; p.position.z = named_j[joint_name].getPosition().z/1000;
-        left_shoulder_msg.name = joint_name;
-        left_shoulder_msg.pose = p;
-        left_shoulder_msg.confidence = named_j[joint_name].getPositionConfidence();
-        // creating left hip joint message
-        joint_name="left_hip";
-        p.position.x = named_j[joint_name].getPosition().x/1000; p.position.y = named_j[joint_name].getPosition().y/-1000; p.position.z = named_j[joint_name].getPosition().z/1000;
-        left_hip_msg.name = joint_name;
-        left_hip_msg.pose = p;
-        left_hip_msg.confidence = named_j[joint_name].getPositionConfidence();
-        // creating left knee joint message
-        joint_name="left_knee";
-        p.position.x = named_j[joint_name].getPosition().x/1000; p.position.y = named_j[joint_name].getPosition().y/-1000; p.position.z = named_j[joint_name].getPosition().z/1000;
-        left_knee_msg.name = joint_name;
-        left_knee_msg.pose = p;
-        left_knee_msg.confidence = named_j[joint_name].getPositionConfidence();
-        // creating left foot joint message
-        joint_name="left_foot";
-        p.position.x = named_j[joint_name].getPosition().x/1000; p.position.y = named_j[joint_name].getPosition().y/-1000; p.position.z = named_j[joint_name].getPosition().z/1000;
-        left_foot_msg.name = joint_name;
-        left_foot_msg.pose = p;
-        left_foot_msg.confidence = named_j[joint_name].getPositionConfidence();
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
 
         incremental_msg.userID = int(user.getId());
         // if (int(user.getId())==1)
         incremental_msg.uuid = alluuid[int(user.getId())];
-
         incremental_msg.joints.clear();
-        incremental_msg.joints.push_back(head_msg);
-        incremental_msg.joints.push_back(neck_msg);
-        incremental_msg.joints.push_back(torso_msg);
-        incremental_msg.joints.push_back(right_shoulder_msg);
-        incremental_msg.joints.push_back(right_elbow_msg);
-        incremental_msg.joints.push_back(right_hand_msg);
-        incremental_msg.joints.push_back(right_hip_msg);
-        incremental_msg.joints.push_back(right_knee_msg);
-        incremental_msg.joints.push_back(right_foot_msg);
-        incremental_msg.joints.push_back(left_shoulder_msg);
-        incremental_msg.joints.push_back(left_elbow_msg);
-        incremental_msg.joints.push_back(left_hand_msg);
-        incremental_msg.joints.push_back(left_hip_msg);
-        incremental_msg.joints.push_back(left_knee_msg);
-        incremental_msg.joints.push_back(left_foot_msg);
+
+
+        incremental_msg.joints.push_back(generate_joint_message("head",nite::JOINT_HEAD,named_j, p, user));
+        incremental_msg.joints.push_back(generate_joint_message("neck",nite::JOINT_NECK,named_j, p, user));
+        incremental_msg.joints.push_back(generate_joint_message("left_shoulder",nite::JOINT_LEFT_SHOULDER,named_j, p, user));
+        incremental_msg.joints.push_back(generate_joint_message("right_shoulder",nite::JOINT_RIGHT_SHOULDER,named_j, p, user));
+        incremental_msg.joints.push_back(generate_joint_message("left_elbow",nite::JOINT_LEFT_ELBOW,named_j, p, user));
+        incremental_msg.joints.push_back(generate_joint_message("right_elbow",nite::JOINT_RIGHT_ELBOW,named_j, p, user));
+        incremental_msg.joints.push_back(generate_joint_message("left_hand",nite::JOINT_LEFT_HAND,named_j, p, user));
+        incremental_msg.joints.push_back(generate_joint_message("right_hand",nite::JOINT_RIGHT_HAND,named_j, p, user));
+        incremental_msg.joints.push_back(generate_joint_message("torso",nite::JOINT_TORSO,named_j, p, user));
+        incremental_msg.joints.push_back(generate_joint_message("left_hip",nite::JOINT_LEFT_HIP,named_j, p, user));
+        incremental_msg.joints.push_back(generate_joint_message("right_hip",nite::JOINT_RIGHT_HIP,named_j, p, user));
+        incremental_msg.joints.push_back(generate_joint_message("left_knee",nite::JOINT_LEFT_KNEE,named_j, p, user));
+        incremental_msg.joints.push_back(generate_joint_message("right_knee",nite::JOINT_RIGHT_KNEE,named_j, p, user));
+        incremental_msg.joints.push_back(generate_joint_message("left_foot",nite::JOINT_LEFT_FOOT,named_j, p, user));
+        incremental_msg.joints.push_back(generate_joint_message("right_foot",nite::JOINT_RIGHT_FOOT,named_j, p, user));
+
+
         incremental_msg.time = ros::Time::now();
         incremental_msg_pub_.publish(incremental_msg);
 
 
+
+
         if (!mImage.empty())
         {
-          int XH = int(named_j["head"].getPosition().x*fx/named_j["head"].getPosition().z +cx);
-          int YH = int(named_j["head"].getPosition().y*fy/named_j["head"].getPosition().z*-1 +cy);
-          int XN = int(named_j["neck"].getPosition().x*fx/named_j["neck"].getPosition().z*1 +cx);
-          int YN = int(named_j["neck"].getPosition().y*fy/named_j["neck"].getPosition().z*-1 +cy);
-          int XT = int(named_j["torso"].getPosition().x*fx/named_j["torso"].getPosition().z*1 +cx);
-          int YT = int(named_j["torso"].getPosition().y*fy/named_j["torso"].getPosition().z*-1 +cy);
+          int X[15];
+          int Y[15];
 
-          int XLS = int(named_j["left_shoulder"].getPosition().x*fx/named_j["left_shoulder"].getPosition().z*1 +cx);
-          int YLS = int(named_j["left_shoulder"].getPosition().y*fy/named_j["left_shoulder"].getPosition().z*-1 +cy);
-          int XLE = int(named_j["left_elbow"].getPosition().x*fx/named_j["left_elbow"].getPosition().z*1 +cx);
-          int YLE = int(named_j["left_elbow"].getPosition().y*fy/named_j["left_elbow"].getPosition().z*-1 +cy);
-          int XLH = int(named_j["left_hand"].getPosition().x*fx/named_j["left_hand"].getPosition().z*1 +cx);
-          int YLH = int(named_j["left_hand"].getPosition().y*fy/named_j["left_hand"].getPosition().z*-1 +cy);
+          int joint_mapping1[]={0,1,1,1,2,3,5,6,8,9,10,8,12,13};
+          int joint_mapping2[]={1,2,5,8,3,4,6,7,9,10,11,12,13,14};
+          generate_joint_coordinates("head",0,X, Y, named_j);
+          generate_joint_coordinates("neck",1,X, Y, named_j);
+          generate_joint_coordinates("torso",8,X, Y, named_j);
+          generate_joint_coordinates("left_shoulder",2,X, Y, named_j);
+          generate_joint_coordinates("left_elbow",3,X, Y, named_j);
+          generate_joint_coordinates("left_hand",4,X, Y, named_j);
+          generate_joint_coordinates("right_shoulder",5,X, Y, named_j);
+          generate_joint_coordinates("right_elbow",6,X, Y, named_j);
+          generate_joint_coordinates("right_hand",7,X, Y, named_j);
+          generate_joint_coordinates("left_hip",9,X, Y, named_j);
+          generate_joint_coordinates("left_knee",10,X, Y, named_j);
+          generate_joint_coordinates("left_foot",11,X, Y, named_j);
+          generate_joint_coordinates("right_hip",12,X, Y, named_j);
+          generate_joint_coordinates("right_knee",13,X, Y, named_j);
+          generate_joint_coordinates("right_foot",14,X, Y, named_j);
 
-          int XRS = int(named_j["right_shoulder"].getPosition().x*fx/named_j["right_shoulder"].getPosition().z*1 +cx);
-          int YRS = int(named_j["right_shoulder"].getPosition().y*fy/named_j["right_shoulder"].getPosition().z*-1 +cy);
-          int XRE = int(named_j["right_elbow"].getPosition().x*fx/named_j["right_elbow"].getPosition().z*1 +cx);
-          int YRE = int(named_j["right_elbow"].getPosition().y*fy/named_j["right_elbow"].getPosition().z*-1 +cy);
-          int XRH = int(named_j["right_hand"].getPosition().x*fx/named_j["right_hand"].getPosition().z*1 +cx);
-          int YRH = int(named_j["right_hand"].getPosition().y*fy/named_j["right_hand"].getPosition().z*-1 +cy);
 
-          int XRHip = int(named_j["right_hip"].getPosition().x*fx/named_j["right_hip"].getPosition().z*1 +cx);
-          int YRHip = int(named_j["right_hip"].getPosition().y*fy/named_j["right_hip"].getPosition().z*-1 +cy);
-          int XRK = int(named_j["right_knee"].getPosition().x*fx/named_j["right_knee"].getPosition().z*1 +cx);
-          int YRK = int(named_j["right_knee"].getPosition().y*fy/named_j["right_knee"].getPosition().z*-1 +cy);
-          int XRF = int(named_j["right_foot"].getPosition().x*fx/named_j["right_foot"].getPosition().z*1 +cx);
-          int YRF = int(named_j["right_foot"].getPosition().y*fy/named_j["right_foot"].getPosition().z*-1 +cy);
+          for(int i=0;i<sizeof(joint_mapping1)/sizeof(*joint_mapping1);i++)
+            cv::line(mImage, cv::Point(X[joint_mapping1[i]],Y[joint_mapping1[i]]),cv::Point(X[joint_mapping2[i]],Y[joint_mapping2[i]]),cv::Scalar(R1,G1,B1),3);
 
-          int XLHip = int(named_j["left_hip"].getPosition().x*fx/named_j["left_hip"].getPosition().z*1 +cx);
-          int YLHip = int(named_j["left_hip"].getPosition().y*fy/named_j["left_hip"].getPosition().z*-1 +cy);
-          int XLK = int(named_j["left_knee"].getPosition().x*fx/named_j["left_knee"].getPosition().z*1 +cx);
-          int YLK = int(named_j["left_knee"].getPosition().y*fy/named_j["left_knee"].getPosition().z*-1 +cy);
-          int XLF = int(named_j["left_foot"].getPosition().x*fx/named_j["left_foot"].getPosition().z*1 +cx);
-          int YLF = int(named_j["left_foot"].getPosition().y*fy/named_j["left_foot"].getPosition().z*-1 +cy);
-
-          cv::line(mImage, cv::Point(XH,YH),cv::Point(XN,YN),cv::Scalar(R1,G1,B1),3);
-          cv::line(mImage, cv::Point(XN,YN),cv::Point(XT,YT),cv::Scalar(R1,G1,B1),3);
-          cv::line(mImage, cv::Point(XN,YN),cv::Point(XLS,YLS),cv::Scalar(R1,G1,B1),3);
-          cv::line(mImage, cv::Point(XLS,YLS),cv::Point(XLE,YLE),cv::Scalar(R1,G1,B1),3);
-          cv::line(mImage, cv::Point(XLE,YLE),cv::Point(XLH,YLH),cv::Scalar(R1,G1,B1),3);
-          cv::line(mImage, cv::Point(XN,YN),cv::Point(XRS,YRS),cv::Scalar(R1,G1,B1),3);
-          cv::line(mImage, cv::Point(XRS,YRS),cv::Point(XRE,YRE),cv::Scalar(R1,G1,B1),3);
-          cv::line(mImage, cv::Point(XRE,YRE),cv::Point(XRH,YRH),cv::Scalar(R1,G1,B1),3);
-          cv::line(mImage, cv::Point(XT,YT),cv::Point(XRHip,YRHip),cv::Scalar(R1,G1,B1),3);
-          cv::line(mImage, cv::Point(XT,YT),cv::Point(XLHip,YLHip),cv::Scalar(R1,G1,B1),3);
-          cv::line(mImage, cv::Point(XRHip,YRHip),cv::Point(XRK,YRK),cv::Scalar(R1,G1,B1),3);
-          cv::line(mImage, cv::Point(XLHip,YLHip),cv::Point(XLK,YLK),cv::Scalar(R1,G1,B1),3);
-          cv::line(mImage, cv::Point(XRK,YRK),cv::Point(XRF,YRF),cv::Scalar(R1,G1,B1),3);
-          cv::line(mImage, cv::Point(XLK,YLK),cv::Point(XLF,YLF),cv::Scalar(R1,G1,B1),3);
-          cv::circle(mImage, cv::Point(XH,YH), 8.0, cv::Scalar(R1,G1,B1), -1, 1 );
+          cv::circle(mImage, cv::Point(X[0],Y[0]), 8.0, cv::Scalar(R1,G1,B1), -1, 1 );
         }
 
         for (JointMap::iterator it = named_j.begin(); it != named_j.end(); ++it)
@@ -867,7 +773,7 @@ private:
   ros::Publisher depthInfoPub_;
 
   /// variable to save the uuids for users
-  std::string alluuid[200];
+  std::string alluuid[100];
 
   //camera_calibrations
   int width=0;
@@ -876,30 +782,11 @@ private:
   std::vector<double> R;
   std::vector<double> D;
   std::vector<double> P;
-  double fx = 525.0;    // default values
-  double fy = 525.0;    // default values
-  double cx = 319.5;    // default values
-  double cy = 239.5;    // default values
 
   bool read_yaml_success=false;
 
   ::geometry_msgs::Pose p;
   std::string joint_name;
-  ::skeleton_tracker::joint_message head_msg;
-  ::skeleton_tracker::joint_message neck_msg;
-  ::skeleton_tracker::joint_message torso_msg;
-  ::skeleton_tracker::joint_message right_shoulder_msg;             // left shoulder
-  ::skeleton_tracker::joint_message right_elbow_msg;             // left elbow
-  ::skeleton_tracker::joint_message right_hand_msg;             // left hand
-  ::skeleton_tracker::joint_message right_knee_msg;             // left knee
-  ::skeleton_tracker::joint_message right_hip_msg;           // left hip
-  ::skeleton_tracker::joint_message right_foot_msg;             // left foot
-  ::skeleton_tracker::joint_message left_shoulder_msg;             // left shoulder
-  ::skeleton_tracker::joint_message left_elbow_msg;             // left elbow
-  ::skeleton_tracker::joint_message left_hand_msg;             // left hand
-  ::skeleton_tracker::joint_message left_knee_msg;             // left knee
-  ::skeleton_tracker::joint_message left_hip_msg;           // left hip
-  ::skeleton_tracker::joint_message left_foot_msg;             // left foot
 
   ::skeleton_tracker::skeleton_message incremental_msg;             // left foot
   ros::Publisher incremental_msg_pub_;
@@ -909,8 +796,7 @@ private:
 
   boost::uuids::uuid dns_namespace_uuid;
   std::string now_str = num_to_str<double>(ros::Time::now().toSec());
-}
-;
+};
 
 #endif /* XTION_TRACKER_HPP_ */
 
