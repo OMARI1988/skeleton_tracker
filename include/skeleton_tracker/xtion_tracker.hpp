@@ -47,27 +47,9 @@
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
-
-// #include <fstream>
-// #include <string>
-// #include <vector>
-// #include <sstream>
-// #include <boost/algorithm/string.hpp>
 //
 #include <yaml-cpp-0.3/yaml.h>
-//#include "yaml-cpp-0.3/parser.h"
-//#include "yaml-cpp-0.3/emitter.h"
-//#include "yaml-cpp-0.3/emitterstyle.h"
-//#include "yaml-cpp-0.3/stlemitter.h"
-//#include "yaml-cpp-0.3/exceptions.h"
-
-//#include "yaml-cpp-0.3/node.h"
-//#include "yaml-cpp-0.3/node/impl.h"
-//#include "yaml-cpp-0.3/node/convert.h"
-//#include "yaml-cpp-0.3/node/iterator.h"
-//#include "yaml-cpp-0.3/node/detail/impl.h"
-//#include "yaml-cpp-0.3/node/parse.h"
-//#include "yaml-cpp-0.3/node/emit.h"
+#include <fstream>
 
 #ifndef ALPHA
 #define ALPHA 1/256
@@ -80,6 +62,29 @@
 
 /// Joint map
 typedef std::map<std::string, nite::SkeletonJoint> JointMap;
+
+/// yaml stuff
+struct Vec5 {
+   float x[5] = { 0 };
+};
+struct Vec9 {
+   float x[9] = { 0 };
+};
+struct Vec12 {
+   float x[12] = { 0 };
+};
+void operator >> (const YAML_0_3::Node& node, Vec5& v) {
+    for(int i=0;i<5;i++)
+      node[i] >> v.x[i];
+}
+void operator >> (const YAML_0_3::Node& node, Vec9& v) {
+    for(int i=0;i<9;i++)
+      node[i] >> v.x[i];
+}
+void operator >> (const YAML_0_3::Node& node, Vec12& v) {
+    for(int i=0;i<12;i++)
+      node[i] >> v.x[i];
+}
 
 /**
  * Union for color definition
@@ -97,9 +102,6 @@ typedef union
   long long_value;
 } RGBValue;
 
-
-
-// std::cout << R1[0] << std::endl;
 /**
  * Class \ref xtion_tracker. This class can track the skeleton of people and returns joints as a TF stream,
  *  while publishing the video stream and the point cloud captured by an ASUS Xtion Pro Live.
@@ -107,9 +109,7 @@ typedef union
 void chatterCallback(const std_msgs::Float64::ConstPtr& msg)
 {
    std::cout << msg << std::endl;
- // ROS_INFO(msg);
 }
-
 
 class xtion_tracker
 {
@@ -123,12 +123,12 @@ public:
 
     // Get some parameters from the server
     ros::NodeHandle pnh("~");
-    // if (!pnh.getParam("tf_prefix", tf_prefix_))
-    // {
-    //   ROS_FATAL("tf_prefix not found on Param Server! Maybe you should add it to your launch file!");
-    //   ros::shutdown();
-    //   return;
-    // }
+    if (!pnh.getParam("camera_calibration", camera_calibration))
+    {
+      ROS_FATAL("camera_calibration not found on Param Server! Maybe you should add it to your launch file!");
+      ros::shutdown();
+      return;
+    }
     if (!pnh.getParam("camera", camera))
     {
       ROS_FATAL("camera not found on Parameter Server! Maybe you should add it to your launch file!");
@@ -240,92 +240,66 @@ public:
     // Initialize the image publisher
     imagePub_ = it_.advertise("/"+camera+"/rgb/image_raw", 1);
     imageSKPub_ = it_.advertise("/"+camera+"/rgb/sk_tracks", 1);
-    // imageWhitePub_ = it_.advertise("/"+camera+"/rgb/white_sk_tracks", 1);
-
-    // Initialize the point cloud publisher
-    // pointCloudPub_ = nh_.advertise<pcl::PointCloud<pcl::PointXYZ> >("/"+camera+"/depth_registered/points", 5);
-
     // Initialize the depth image publisher
     depthPub_ = it_.advertise("/"+camera+"/depth/image_raw", 1);
-
     // Initialize the users IDs publisher
     userPub_ = nh_.advertise<skeleton_tracker::user_IDs>("/people", 1);
-
     sub = nh_.subscribe("/image_calib", 1000, chatterCallback);
 
-    // reading the camera calibration
+    // read yaml files
     std::ifstream fin("/home/lucie02/.ros/camera_info/rgb_PS1080_PrimeSense.yaml");
-    YAML_0_3::Parser parser(fin);
+    if (fin.good())
+    {
+        YAML_0_3::Parser parser(fin);
+        YAML_0_3::Node config;
 
-    std::cout << "test1: " << std::endl;
-    YAML_0_3::Node doc;    // already parsed
-    while(parser.GetNextDocument(doc)) {
-	int height;
-	doc["image_height"] >> height;
-        std::cout << "image_height: " << height << std::endl;
+        Vec9 camera_param;
+        Vec5 distortion;
+        Vec9 rectification;
+        Vec12 projection;
 
+        parser.GetNextDocument(config);
 
-        for(YAML_0_3::Iterator it=doc.begin();it!=doc.end();++it) {
-           std::cout << "test2: " << std::endl;
-    	   std::string key, value;
-           it.first() >> key;
-           //it.second() >> value;
-           std::cout << "Key: " << key << ", value: " << std::endl;
-        }
+        config["image_width"] >> width;
+        config["image_height"] >> height;
+        config["camera_matrix"]["data"] >> camera_param;
+        config["distortion_coefficients"]["data"] >> distortion;
+        config["rectification_matrix"]["data"] >> rectification;
+        config["projection_matrix"]["data"] >> projection;
+
+        for (std::size_t i=0;i<9;i++){K.push_back(camera_param.x[i]);}
+        for (std::size_t i=0;i<9;i++){R.push_back(rectification.x[i]);}
+        for (std::size_t i=0;i<5;i++){D.push_back(distortion.x[i]);}
+        for (std::size_t i=0;i<12;i++){P.push_back(projection.x[i]);}
+        fx=K[0]; fy=K[4]; cx=K[2]; cy=K[5];
+
+        ROS_INFO("reading camera calibration file...");
+        std::cout<<"Camera matrix: "<<"fx:"<<fx<<" "<<"fy:"<<fy<<" "<<"cx:"<<cx<<" "<<"cy:"<<cy<<std::endl;
+        std::cout<<"Rectification coefficients: ";
+        for(std::size_t i=0;i<R.size();i++)
+            std::cout<<R[i]<<" ";
+        std::cout<<std::endl;
+        std::cout<<"Distortion coefficients: ";
+        for(std::size_t i=0;i<D.size();i++)
+            std::cout<<D[i]<<" ";
+        std::cout<<std::endl;
+        std::cout<<"Projection matrix: ";
+        for(std::size_t i=0;i<P.size();i++)
+            std::cout<<P[i]<<" ";
+        read_yaml_success = 1;
+        std::cout<<std::endl;
     }
-	
-
-        /*
-          ...
-          Process the event.
-          ...
-        */
-
-        /* Are we finished? */
-        //done = (event.type == YAML_STREAM_END_EVENT);
-
-        /* The application is responsible for destroying the event object. */
-        //yaml_event_delete(&event);
-    //}
-
-    // std::ifstream fin("~/.ros/camera_info/rgb_PS1080_PrimeSense.yaml");
-
-    // std::string line;
-    // std::vector<std::string> strs;
-    // std::ifstream myfile ("/home/lucie01/.ros/camera_info/rgb_PS1080_PrimeSense.yaml");
-    // std::cout << myfile << std::endl;
-    // if (myfile.is_open())
-    // {
-    //   while ( getline (myfile,line) )
-    //   {
-    //     // std::cout << line << '\n';
-    //     boost::split(strs, line, boost::is_any_of(":"));
-    //     // std::copy(strs.begin(), strs.end(), std::ostream_iterator<std::string>(std::cout, " "));
-    //     std::cout << strs[0] << std::endl;
-    //     std::cout << strs[1] << std::endl;
-    //     int i_dec = std::stoi (strs[1],nullptr,16);
-    //     // std::cout << \n';
-    //   }
-    //   myfile.close();
-    // }
-    //
-    // else std::cout << "############################################# Unable to open file" << '\n';
+    else{
+        ROS_INFO("camera calibration file could not be opened.");
+    }
 
 
     // Initialize both the Camera Info publishers
     depthInfoPub_ = nh_.advertise<sensor_msgs::CameraInfo>("/"+camera+"/depth/camera_info", 1);
-
     rgbInfoPub_ = nh_.advertise<sensor_msgs::CameraInfo>("/"+camera+"/rgb/camera_info", 1);
-
     incremental_msg_pub_ = nh_.advertise<skeleton_tracker::skeleton_message>("/skeleton_data/incremental", 1);
-
-    // rate_ = new ros::Rate(300);
-
     // Initialize the skeleton state publisher
     skeleton_state_pub_ = nh_.advertise<skeleton_tracker::skeleton_tracker_state>("skeleton_data/state", 10);
-
-
-
   }
   /**
    * Destructor
@@ -537,17 +511,9 @@ private:
 
   void getSkeleton()
   {
-
-    float fx = 525.0;
-    float fy = 525.0;
-    float cx = 319.5;
-    float cy = 239.5;
-
     int R1 = 31;
     int G1 = 210;
     int B1 = 170;
-
-
     skeleton_tracker::user_IDs ids;
     niteRc_ = userTracker_.readFrame(&userTrackerFrame_);
     if (niteRc_ != nite::STATUS_OK)
@@ -782,49 +748,60 @@ private:
    */
   sensor_msgs::CameraInfoPtr fillCameraInfo(ros::Time time, bool is_rgb)
   {
-
     sensor_msgs::CameraInfoPtr info_msg = boost::make_shared<sensor_msgs::CameraInfo>();
-    // if (!is_rgb)
-    // {
-    //   depthStream_.start();
-    //   depthStream_.readFrame(&depthFrame_);
-    // }
-
+    info_msg->header.frame_id = depth_frame;
     if (is_rgb)
     {
       info_msg->header.frame_id = rgb_frame;
     }
-
-    info_msg->header.frame_id = depth_frame;
     info_msg->header.stamp = time;
-    info_msg->width = is_rgb ? mMode_.getResolutionX() : depthMode_.getResolutionX();
-    info_msg->height = is_rgb ? mMode_.getResolutionY() : depthMode_.getResolutionY();
-    info_msg->distortion_model = sensor_msgs::distortion_models::PLUMB_BOB;
-    info_msg->D = std::vector<double>(5, 0.0);
-    info_msg->K.assign(0.0);
-    info_msg->R.assign(0.0);
-    info_msg->P.assign(0.0);
-    openni::DeviceInfo info = devDevice_.getDeviceInfo();
-    const char* uri = info.getUri();
-    std::string stringa(uri);
-    openni2_wrapper::OpenNI2Device dev(stringa);
+    if (read_yaml_success)
+    {
+        info_msg->width = width;
+        info_msg->height = height;
+        // note to myself: fix distortion model
+        info_msg->distortion_model = sensor_msgs::distortion_models::PLUMB_BOB;
+        info_msg->D = D;
+        for( int a = 0; a < 9; a = a + 1 ) {
+            info_msg->K[a] = K[a];
+            info_msg->R[a] = R[a];
+            info_msg->P[a] = P[a];
+        }
+        info_msg->P[9] = P[9];
+        info_msg->P[10] = P[10];
+        info_msg->P[11] = P[11];
+    }
+    else
+    {
+        info_msg->width = is_rgb ? mMode_.getResolutionX() : depthMode_.getResolutionX();
+        info_msg->height = is_rgb ? mMode_.getResolutionY() : depthMode_.getResolutionY();
+        info_msg->distortion_model = sensor_msgs::distortion_models::PLUMB_BOB;
+        info_msg->D = std::vector<double>(5, 0.0);
+        info_msg->K.assign(0.0);
+        info_msg->R.assign(0.0);
+        info_msg->P.assign(0.0);
+        openni::DeviceInfo info = devDevice_.getDeviceInfo();
+        const char* uri = info.getUri();
+        std::string stringa(uri);
+        openni2_wrapper::OpenNI2Device dev(stringa);
 
-    double f =
-        is_rgb ? dev.getColorFocalLength(vfColorFrame_.getHeight()) : dev.getColorFocalLength(depthFrame_.getHeight());
-    info_msg->K[0] = info_msg->K[4] = f;
-    info_msg->K[2] = (info_msg->width / 2) - 0.5;
-    info_msg->K[5] = (info_msg->width * 3. / 8.) - 0.5; //aspect ratio for the camera center on kinect and presumably other devices is 4/3
-    info_msg->K[8] = 1.0;
-    // no rotation: identity
-    info_msg->R[0] = info_msg->R[4] = info_msg->R[8] = 1.0;
-    // no rotation, no translation => P=K(I|0)=(K|0)
-    info_msg->P[0] = info_msg->P[5] = info_msg->K[0];
-    info_msg->P[2] = info_msg->K[2];
-    info_msg->P[6] = info_msg->K[5];
-    info_msg->P[10] = 1.0;
+        double f =
+            is_rgb ? dev.getColorFocalLength(vfColorFrame_.getHeight()) : dev.getColorFocalLength(depthFrame_.getHeight());
+        info_msg->K[0] = info_msg->K[4] = f;
+        info_msg->K[2] = (info_msg->width / 2) - 0.5;
+        info_msg->K[5] = (info_msg->width * 3. / 8.) - 0.5; //aspect ratio for the camera center on kinect and presumably other devices is 4/3
+        info_msg->K[8] = 1.0;
+        // no rotation: identity
+        info_msg->R[0] = info_msg->R[4] = info_msg->R[8] = 1.0;
+        // no rotation, no translation => P=K(I|0)=(K|0)
+        info_msg->P[0] = info_msg->P[5] = info_msg->K[0];
+        info_msg->P[2] = info_msg->K[2];
+        info_msg->P[6] = info_msg->K[5];
+        info_msg->P[10] = 1.0;
+    }
+
     return (info_msg);
   }
-
 
   /// ROS NodeHandle
   ros::NodeHandle nh_;
@@ -834,7 +811,7 @@ private:
 
   /// Image transport
   image_transport::ImageTransport it_;
-  std::string depth_frame, rgb_frame, camera;
+  std::string depth_frame, rgb_frame, camera, camera_calibration;
   /// Frame broadcaster
   tf::TransformBroadcaster tfBroadcast_;
   /// The openni device
@@ -893,8 +870,18 @@ private:
   std::string alluuid[200];
 
   //camera_calibrations
-  std::vector<double> D_;
-  // std::vector<double> K_();
+  int width=0;
+  int height=0;
+  std::vector<double> K;
+  std::vector<double> R;
+  std::vector<double> D;
+  std::vector<double> P;
+  double fx = 525.0;    // default values
+  double fy = 525.0;    // default values
+  double cx = 319.5;    // default values
+  double cy = 239.5;    // default values
+
+  bool read_yaml_success=false;
 
   ::geometry_msgs::Pose p;
   std::string joint_name;
