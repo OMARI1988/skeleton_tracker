@@ -602,11 +602,18 @@ private:
 
         if (!mImage.empty())
         {
+          mImage.copyTo(canvas); //uncomment
+          mImage *= .4;
+          canvas *= .6;
           int X[15];
           int Y[15];
-
-          int joint_mapping1[]={0,1,1,1,2,3,5,6,8,9,10,8,12,13};
-          int joint_mapping2[]={1,2,5,8,3,4,6,7,9,10,11,12,13,14};
+        //   int joint_mappinga1[]={0,1,1,1,8,8};
+        //   int joint_mappinga2[]={1,2,5,8,9,12};
+          int joint_mapping1[]={2,3,5,6,9,10,12,13};
+          int joint_mapping2[]={3,4,6,7,10,11,13,14};
+          int R[]={0,0,0,0,170,255,255,255,170};
+          int G[]={0,170,255,255,255,170,0,0,0};
+          int B[]={255,255,170,0,0,0,0,170,255};
           generate_joint_coordinates("head",0,X, Y, named_j);
           generate_joint_coordinates("neck",1,X, Y, named_j);
           generate_joint_coordinates("torso",8,X, Y, named_j);
@@ -623,11 +630,24 @@ private:
           generate_joint_coordinates("right_knee",13,X, Y, named_j);
           generate_joint_coordinates("right_foot",14,X, Y, named_j);
 
+        //   for(int i=0;i<sizeof(joint_mappinga1)/sizeof(*joint_mappinga1);i++)
+            // cv::line(canvas, cv::Point(X[joint_mappinga1[i]],Y[joint_mappinga1[i]]),cv::Point(X[joint_mapping2[i]],Y[joint_mapping2[i]]),cv::Scalar(R1,G1,B1),3);
 
           for(int i=0;i<sizeof(joint_mapping1)/sizeof(*joint_mapping1);i++)
-            cv::line(mImage, cv::Point(X[joint_mapping1[i]],Y[joint_mapping1[i]]),cv::Point(X[joint_mapping2[i]],Y[joint_mapping2[i]]),cv::Scalar(R1,G1,B1),3);
+            {
+                int x1 = Y[joint_mapping1[i]];
+                int x2 = Y[joint_mapping2[i]];
+                int y1 = X[joint_mapping1[i]];
+                int y2 = X[joint_mapping2[i]];
+                int mX = (x1+x2)/2;
+                int mY = (y1+y2)/2;
+                int length = std::pow(std::pow(x1-x2,2) + std::pow(y1-y2,2),.5)/2;
+                int angle = std::atan2(x1 - x2, y1 - y2)*180/3.14;
+                cv::ellipse( canvas, cv::Point(mY,mX), cv::Size(length, 9), angle, 0, 360, cv::Scalar( R[i], G[i], B[i] ), -1, 8);
+            }
 
-          cv::circle(mImage, cv::Point(X[0],Y[0]), 8.0, cv::Scalar(R1,G1,B1), -1, 1 );
+          cv::circle(canvas, cv::Point(X[0],Y[0]), 8.0, cv::Scalar(220,20,240), -1, 1 );
+          mImage += canvas;
         }
 
         for (JointMap::iterator it = named_j.begin(); it != named_j.end(); ++it)
@@ -746,6 +766,7 @@ private:
 
   // image_transport::Publisher imageWhitePub_;
   cv::Mat mImage;
+  cv::Mat canvas;
   // cv::Mat mImage_white;
   /// Users IDs publisher
   ros::Publisher userPub_;
