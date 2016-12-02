@@ -274,7 +274,7 @@ public:
     sub = nh_.subscribe("/image_calib", 1000, chatterCallback);
 
     // read yaml files
-    std::ifstream fin("/home/lucie02/.ros/camera_info/rgb_PS1080_PrimeSense.yaml");
+    std::ifstream fin(camera_calibration.c_str());
     if (fin.good())
     {
         YAML_0_3::Parser parser(fin);
