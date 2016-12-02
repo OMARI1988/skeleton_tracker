@@ -3,8 +3,8 @@
   <arg name="machine" default="localhost" />
   <arg name="user" default="" />
   <arg name="camera" default="head_xtion" />
-  <arg name="rgb_frame_id"   default="$(arg camera)_depth_optical_frame" />
-  <arg name="depth_frame_id" default="$(arg camera)_depth_optical_frame" />
+  <arg name="rgb_frame_id"   default="$(arg camera)_rgb_optical_frame" />
+  <arg name="depth_frame_id" default="$(arg camera)_rgb_optical_frame" />
   <arg name="camera_calibration" default="~/.ros/camera_info/rgb_PS1080_PrimeSense.yaml" />
 
 
